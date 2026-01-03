@@ -17,7 +17,7 @@ def generate_html():
     now = datetime.now()
     timestamp = now.strftime("%y%m%d_%H%M")
     output_file = f"index_{timestamp}.html"
-    img_cdn_base = "https://raw.githubusercontent.com/SIN0NIS/abilitytalents/main/"
+    img_cdn_base = "https://raw.githubusercontent.com/SIN0NIS/images/main/abilitytalents/"
 
     print(f"사용 데이터: {json_path}")
     print(f"생성 파일: {output_file}")
@@ -248,3 +248,4 @@ def generate_html():
 
 if __name__ == "__main__":
     generate_html()
+
