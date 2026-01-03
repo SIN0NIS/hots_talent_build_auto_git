@@ -48,9 +48,18 @@ def generate_html():
         .hero-item:hover {{ background: var(--p); }}
         #capture-area {{ flex: 1; display: flex; flex-direction: column; overflow-y: auto; padding-bottom: 220px; }}
         #hero-stat-container {{ background: #1a1a20; margin: 10px; padding: 15px; border-radius: 8px; border: 1px solid #333; display: none; }}
-        .stat-grid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }}
+        .stat-grid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 15px; }}
         .stat-item {{ background: #111; padding: 8px; border-radius: 4px; font-size: 12px; display: flex; flex-direction: column; gap: 2px; }}
         .stat-value {{ color: #fff; font-weight: bold; font-size: 13px; }}
+        
+        /* 스킬 정보 레이아웃 추가 */
+        .ability-list {{ border-top: 1px solid #333; padding-top: 10px; display: flex; flex-direction: column; gap: 10px; }}
+        .ability-item {{ display: flex; gap: 10px; align-items: flex-start; background: #111; padding: 8px; border-radius: 6px; }}
+        .ability-icon {{ width: 34px; height: 34px; border: 1px solid #444; border-radius: 4px; flex-shrink: 0; }}
+        .ability-text {{ flex: 1; font-size: 11px; color: #ccc; line-height: 1.4; }}
+        .ability-name {{ font-weight: bold; color: var(--blue); display: block; margin-bottom: 2px; }}
+        .ability-type {{ color: var(--gold); margin-right: 5px; }}
+
         .tier-row {{ display: flex; align-items: center; background: var(--card); padding: 8px 10px; border-radius: 6px; border-left: 5px solid var(--p); gap: 10px; min-height: 65px; margin: 3px 5px; }}
         .tier-label {{ color: var(--blue); font-weight: bold; width: 35px; flex-shrink: 0; font-size: 12px; text-align: center; }}
         .t-icon {{ width: 40px; height: 40px; border: 1px solid #444; cursor: pointer; border-radius: 5px; background: #000; transition: all 0.2s; }}
@@ -59,8 +68,7 @@ def generate_html():
         .t-info-display {{ flex: 1; font-size: 11px; color: #ccc; line-height: 1.4; padding-left: 10px; border-left: 1px solid #444; height: 46px; overflow-y: auto; }}
         #footer {{ position: fixed; bottom: 0; width: 100%; background: rgba(0,0,0,0.95); border-top: 2px solid var(--p); padding: 10px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: 8px; backdrop-filter: blur(10px); z-index: 1500; }}
         
-        /* 요약 아이콘 크기 수정 부분 */
-        .summary-img {{ width: 45px; height: 45px; border-radius: 3px; border: 1px solid var(--gold); }}
+        .summary-img {{ width: 17px; height: 17px; border-radius: 3px; border: 1px solid var(--gold); }}
     </style>
 </head>
 <body>
@@ -86,6 +94,8 @@ def generate_html():
                 </div>
             </div>
             <div class="stat-grid" id="stat-grid"></div>
+            
+            <div id="ability-container" class="ability-list"></div>
         </div>
         <div id="main-content"></div>
     </div>
@@ -134,6 +144,9 @@ def generate_html():
             document.getElementById("hero-info-title").innerText = currentHeroData.name;
             document.getElementById("hero-role-badge").innerText = currentHeroData.expandedRole || "미분류";
             document.getElementById("hero-stat-container").style.display = "block";
+            
+            renderAbilities(); // 스킬 정보 렌더링 호출
+            
             const lvs = Object.keys(currentHeroData.talents).filter(l => currentHeroData.talents[l].length > 0).sort((a,b) => parseInt(a.replace(/\D/g,"")) - parseInt(b.replace(/\D/g,"")));
             selectedTalents = new Array(lvs.length).fill(0); currentTalentNodes = [];
             let h = ''; lvs.forEach((l, i) => {{
@@ -149,6 +162,36 @@ def generate_html():
             if(code) code.forEach((v, i) => {{ if(parseInt(v)>0) toggleTalent(i, parseInt(v), document.querySelector(`.t-node-${{i}}-${{v}}`)); }});
             renderStats(); updateLocks(); updateUI();
         }}
+        
+        function renderAbilities() {{
+            const container = document.getElementById("ability-container");
+            if(!currentHeroData.abilities) return;
+            
+            const abs = currentHeroData.abilities;
+            // Q, W, E, Trait, Z 순서대로 정렬하기 위해 리스트 생성
+            const targetTypes = ["Q", "W", "E", "Trait", "Z"];
+            let html = "";
+            
+            // basic과 trait 리스트를 합쳐서 검색
+            const allAbilities = [...(abs.basic || []), ...(abs.trait || []), ...(abs.mount || [])];
+            
+            targetTypes.forEach(type => {{
+                const skill = allAbilities.find(a => a.abilityType === type);
+                if(skill) {{
+                    const typeLabel = skill.abilityType === "Trait" ? "D" : skill.abilityType;
+                    html += `
+                        <div class="ability-item">
+                            <img src="${{imgBase}}${{skill.icon}}" class="ability-icon">
+                            <div class="ability-text">
+                                <span class="ability-name"><span class="ability-type">[${{typeLabel}}]</span> ${{skill.name}}</span>
+                                <div>${{processTooltip(skill.fullTooltip || skill.description, currentLevel)}}</div>
+                            </div>
+                        </div>`;
+                }}
+            }});
+            container.innerHTML = html;
+        }}
+
         function toggleTalent(ti, tn, el) {{
             if(!el || el.classList.contains('locked')) return;
             const box = document.getElementById("desc-"+ti);
@@ -165,6 +208,7 @@ def generate_html():
             document.getElementById("level-growth-total").innerText = "(+" + ((Math.pow(1.04, currentLevel - 1) - 1) * 100).toFixed(2) + "%)";
             if(currentHeroData) {{
                 renderStats();
+                renderAbilities(); // 레벨 변경 시 스킬 툴팁 수치도 업데이트
                 selectedTalents.forEach((tn, ti) => {{
                     if(tn > 0) {{
                         const box = document.getElementById("desc-"+ti); const t = currentTalentNodes[ti][tn-1];
@@ -210,7 +254,6 @@ def generate_html():
             }});
         }}
         function updateUI() {{
-            /* 요약 아이콘 및 빈 칸 크기를 17px로 수정 */
             const sum = selectedTalents.map((tn, ti) => tn === 0 ? `<div style="width:17px; height:17px; border:1px dashed #333; border-radius:4px;"></div>` : `<img src="${{imgBase}}${{currentTalentNodes[ti][tn-1].icon}}" class="summary-img">`).join("");
             document.getElementById("selected-summary").innerHTML = sum;
             document.getElementById("build-code").innerText = "[T" + selectedTalents.join("") + "," + (currentHeroData ? currentHeroData.hyperlinkId : "") + "]";
@@ -227,14 +270,14 @@ def generate_html():
         function takeScreenshot() {{ html2canvas(document.getElementById("capture-area"), {{useCORS:true, backgroundColor:"#0b0b0d"}}).then(c => {{ const l = document.createElement('a'); l.download="build.png"; l.href=c.toDataURL(); l.click(); }}); }}
     </script>
 </body>
-</html>"""
+</html>\"\"\"
 
     # 5. 파일 저장
     with open(output_file, 'w', encoding='utf-8') as f:
         f.write(html_content)
 
     # 6. 메인 페이지(hots_talent_build.html) 업데이트
-    main_page = f"""<!DOCTYPE html>
+    main_page = f\"\"\"<!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
@@ -242,8 +285,8 @@ def generate_html():
     <title>히오스 빌드 메이커 - 통합</title>
     <style>body, html {{ margin: 0; padding: 0; height: 100%; overflow: hidden; }} iframe {{ width: 100%; height: 100%; border: none; }}</style>
 </head>
-<body><iframe src="{output_file}"></iframe></body>
-</html>"""
+<body><iframe src=\"{output_file}\"></iframe></body>
+</html>\"\"\"
 
     with open('hots_talent_build.html', 'w', encoding='utf-8') as f:
         f.write(main_page)
@@ -252,5 +295,3 @@ def generate_html():
 
 if __name__ == "__main__":
     generate_html()
-
-
