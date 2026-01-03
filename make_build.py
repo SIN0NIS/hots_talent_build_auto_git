@@ -70,7 +70,13 @@ def generate_html():
 <body>
     <div id="header">
         <div class="search-group">
-            <input type="text" id="comment-input" class="comment-input" value="https://github.com/SIN0NIS/hots_talent_build_auto_git" readonly style="cursor: default; pointer-events: none; opacity: 0.6;">
+           	<div style="position: relative;">
+		    <input type="text" id="comment-input" class="comment-input" 
+	    		value="https://github.com/SIN0NIS/hots_talent_build_auto_git" 
+	    		readonly 
+	    		style="cursor: pointer; color: var(--blue); text-decoration: underline;" 
+	    		onclick="window.open(this.value, '_blank')">
+        	</div>
             <div style="display:flex; gap:8px;">
                 <input type="text" id="hero-search" class="search-box" placeholder="영웅 검색 또는 코드 입력..." onclick="showList()" oninput="handleSearch(this.value)">
                 <button onclick="loadFromCode()" style="padding:0 15px; background:var(--p); color:white; border:none; border-radius:6px; font-weight:bold;">로드</button>
@@ -231,5 +237,6 @@ def generate_html():
 
 if __name__ == "__main__":
     generate_html()
+
 
 
