@@ -167,7 +167,7 @@ def generate_html():
             if(!currentHeroData.abilities) return;
             const abs = currentHeroData.abilities;
             // Q, W, E, Trait, Z 순서에 더해 Active 추가
-            const targetTypes = ["Q", "W", "E", "Trait", "Z", "Active"];
+            const targetTypes = ["Q", "W", "E", "activable", "Trait", "Z"];
             let html = "";
             const allAbilities = [
                 ...(abs.basic || []), 
@@ -300,3 +300,4 @@ def generate_html():
 
 if __name__ == "__main__":
     generate_html()
+
