@@ -1,0 +1,32 @@
+name: Auto Build and Update
+
+on:
+  push:
+    paths:
+      - 'herodata_*_kokr.json'  # JSON 파일이 푸시될 때 실행
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # 쓰기 권한 부여
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Run Script
+        run: python make_build.py
+
+      - name: Commit and Push
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git add .
+          git commit -m "Auto-generate HTML and update main page" || echo "No changes to commit"
+          git push
