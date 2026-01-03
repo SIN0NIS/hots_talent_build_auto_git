@@ -75,7 +75,7 @@ def generate_html():
 <body>
     <div id="header">
         <div class="search-group">
-            <input type="text" id="comment-input" class="comment-input" placeholder="코멘트를 입력하세요..." oninput="syncComment(this.value)" value="SINONIS입니다">
+            <input type="text" id="comment-input" class="comment-input" placeholder="테스트버전입니다." oninput="syncComment(this.value)" value="링크 참조 : https://github.com/SIN0NIS/hots_talent_build_auto_git ">
             <div style="display:flex; gap:8px;">
                 <input type="text" id="hero-search" class="search-box" placeholder="영웅 검색..." onclick="showList()" oninput="handleSearch(this.value)">
                 <button onclick="loadFromCode()" style="padding:0 15px; background:var(--p); color:white; border:none; border-radius:6px; font-weight:bold;">로드</button>
@@ -233,3 +233,4 @@ def generate_html():
 
 if __name__ == "__main__":
     generate_html()
+
