@@ -68,7 +68,7 @@ def generate_html():
         .t-info-display {{ flex: 1; font-size: 11px; color: #ccc; line-height: 1.4; padding-left: 10px; border-left: 1px solid #444; height: 46px; overflow-y: auto; }}
         #footer {{ position: fixed; bottom: 0; width: 100%; background: rgba(0,0,0,0.95); border-top: 2px solid var(--p); padding: 10px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: 8px; backdrop-filter: blur(10px); z-index: 1500; }}
         
-        .summary-img {{ width: 17px; height: 17px; border-radius: 3px; border: 1px solid var(--gold); }}
+        .summary-img {{ width: 45px; height: 45px; border-radius: 3px; border: 1px solid var(--gold); }}
     </style>
 </head>
 <body>
@@ -145,7 +145,7 @@ def generate_html():
             document.getElementById("hero-role-badge").innerText = currentHeroData.expandedRole || "미분류";
             document.getElementById("hero-stat-container").style.display = "block";
             
-            renderAbilities(); // 스킬 정보 렌더링 호출
+            renderAbilities();
             
             const lvs = Object.keys(currentHeroData.talents).filter(l => currentHeroData.talents[l].length > 0).sort((a,b) => parseInt(a.replace(/\D/g,"")) - parseInt(b.replace(/\D/g,"")));
             selectedTalents = new Array(lvs.length).fill(0); currentTalentNodes = [];
@@ -166,13 +166,9 @@ def generate_html():
         function renderAbilities() {{
             const container = document.getElementById("ability-container");
             if(!currentHeroData.abilities) return;
-            
             const abs = currentHeroData.abilities;
-            // Q, W, E, Trait, Z 순서대로 정렬하기 위해 리스트 생성
             const targetTypes = ["Q", "W", "E", "Trait", "Z"];
             let html = "";
-            
-            // basic과 trait 리스트를 합쳐서 검색
             const allAbilities = [...(abs.basic || []), ...(abs.trait || []), ...(abs.mount || [])];
             
             targetTypes.forEach(type => {{
@@ -208,7 +204,7 @@ def generate_html():
             document.getElementById("level-growth-total").innerText = "(+" + ((Math.pow(1.04, currentLevel - 1) - 1) * 100).toFixed(2) + "%)";
             if(currentHeroData) {{
                 renderStats();
-                renderAbilities(); // 레벨 변경 시 스킬 툴팁 수치도 업데이트
+                renderAbilities();
                 selectedTalents.forEach((tn, ti) => {{
                     if(tn > 0) {{
                         const box = document.getElementById("desc-"+ti); const t = currentTalentNodes[ti][tn-1];
@@ -270,14 +266,12 @@ def generate_html():
         function takeScreenshot() {{ html2canvas(document.getElementById("capture-area"), {{useCORS:true, backgroundColor:"#0b0b0d"}}).then(c => {{ const l = document.createElement('a'); l.download="build.png"; l.href=c.toDataURL(); l.click(); }}); }}
     </script>
 </body>
-</html>\"\"\"
+</html>"""
 
-    # 5. 파일 저장
     with open(output_file, 'w', encoding='utf-8') as f:
         f.write(html_content)
 
-    # 6. 메인 페이지(hots_talent_build.html) 업데이트
-    main_page = f\"\"\"<!DOCTYPE html>
+    main_page = f"""<!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
@@ -285,8 +279,8 @@ def generate_html():
     <title>히오스 빌드 메이커 - 통합</title>
     <style>body, html {{ margin: 0; padding: 0; height: 100%; overflow: hidden; }} iframe {{ width: 100%; height: 100%; border: none; }}</style>
 </head>
-<body><iframe src=\"{output_file}\"></iframe></body>
-</html>\"\"\"
+<body><iframe src="{output_file}"></iframe></body>
+</html>"""
 
     with open('hots_talent_build.html', 'w', encoding='utf-8') as f:
         f.write(main_page)
