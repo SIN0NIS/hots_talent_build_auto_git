@@ -67,7 +67,7 @@ def generate_html():
         .t-info-display {{ flex: 1; font-size: 11px; color: #ccc; line-height: 1.4; padding-left: 10px; border-left: 1px solid #444; height: 46px; overflow-y: auto; }}
         #footer {{ position: fixed; bottom: 0; width: 100%; background: rgba(0,0,0,0.95); border-top: 2px solid var(--p); padding: 10px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: 8px; backdrop-filter: blur(10px); z-index: 1500; }}
         
-        .summary-img {{ width: 17px; height: 17px; border-radius: 3px; border: 1px solid var(--gold); }}
+        .summary-img {{ width: 45px; height: 45px; border-radius: 4px; border: 2px solid var(--gold); }}
     </style>
 </head>
 <body>
@@ -298,3 +298,4 @@ def generate_html():
 
 if __name__ == "__main__":
     generate_html()
+
