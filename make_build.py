@@ -52,7 +52,6 @@ def generate_html():
         .stat-item {{ background: #111; padding: 8px; border-radius: 4px; font-size: 12px; display: flex; flex-direction: column; gap: 2px; }}
         .stat-value {{ color: #fff; font-weight: bold; font-size: 13px; }}
         
-        /* 스킬 정보 레이아웃 추가 */
         .ability-list {{ border-top: 1px solid #333; padding-top: 10px; display: flex; flex-direction: column; gap: 10px; }}
         .ability-item {{ display: flex; gap: 10px; align-items: flex-start; background: #111; padding: 8px; border-radius: 6px; }}
         .ability-icon {{ width: 34px; height: 34px; border: 1px solid #444; border-radius: 4px; flex-shrink: 0; }}
@@ -68,7 +67,7 @@ def generate_html():
         .t-info-display {{ flex: 1; font-size: 11px; color: #ccc; line-height: 1.4; padding-left: 10px; border-left: 1px solid #444; height: 46px; overflow-y: auto; }}
         #footer {{ position: fixed; bottom: 0; width: 100%; background: rgba(0,0,0,0.95); border-top: 2px solid var(--p); padding: 10px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: 8px; backdrop-filter: blur(10px); z-index: 1500; }}
         
-        .summary-img {{ width: 45px; height: 45px; border-radius: 3px; border: 1px solid var(--gold); }}
+        .summary-img {{ width: 17px; height: 17px; border-radius: 3px; border: 1px solid var(--gold); }}
     </style>
 </head>
 <body>
@@ -167,14 +166,24 @@ def generate_html():
             const container = document.getElementById("ability-container");
             if(!currentHeroData.abilities) return;
             const abs = currentHeroData.abilities;
-            const targetTypes = ["Q", "W", "E", "Trait", "Z"];
+            // Q, W, E, Trait, Z 순서에 더해 Active 추가
+            const targetTypes = ["Q", "W", "E", "Trait", "Z", "Active"];
             let html = "";
-            const allAbilities = [...(abs.basic || []), ...(abs.trait || []), ...(abs.mount || [])];
+            const allAbilities = [
+                ...(abs.basic || []), 
+                ...(abs.trait || []), 
+                ...(abs.mount || []), 
+                ...(abs.active || [])
+            ];
             
             targetTypes.forEach(type => {{
-                const skill = allAbilities.find(a => a.abilityType === type);
-                if(skill) {{
-                    const typeLabel = skill.abilityType === "Trait" ? "D" : skill.abilityType;
+                // 해당 타입의 모든 스킬을 찾음 (Active가 여러 개일 수 있으므로 filter 사용)
+                const skills = allAbilities.filter(a => a.abilityType === type);
+                skills.forEach(skill => {{
+                    let typeLabel = skill.abilityType;
+                    if (type === "Trait") typeLabel = "D";
+                    else if (type === "Active") typeLabel = "Active";
+                    
                     html += `
                         <div class="ability-item">
                             <img src="${{imgBase}}${{skill.icon}}" class="ability-icon">
@@ -183,7 +192,7 @@ def generate_html():
                                 <div>${{processTooltip(skill.fullTooltip || skill.description, currentLevel)}}</div>
                             </div>
                         </div>`;
-                }}
+                }});
             }});
             container.innerHTML = html;
         }}
@@ -268,9 +277,11 @@ def generate_html():
 </body>
 </html>"""
 
+    # 5. 파일 저장
     with open(output_file, 'w', encoding='utf-8') as f:
         f.write(html_content)
 
+    # 6. 메인 페이지(hots_talent_build.html) 업데이트
     main_page = f"""<!DOCTYPE html>
 <html lang="ko">
 <head>
