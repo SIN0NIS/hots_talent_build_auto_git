@@ -1,15 +1,16 @@
-name: Auto Build and Update
+name: Manual Build and Update
 
 on:
   push:
     paths:
-      - 'herodata_*_kokr.json'  # JSON 파일이 푸시될 때 실행
+      - 'herodata_*_kokr.json'
+  workflow_dispatch:  # <-- 이 줄을 추가하면 수동 실행 버튼이 생깁니다.
 
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # 쓰기 권한 부여
+      contents: write
 
     steps:
       - name: Checkout code
@@ -28,5 +29,5 @@ jobs:
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
           git add .
-          git commit -m "Auto-generate HTML and update main page" || echo "No changes to commit"
+          git commit -m "Manual update from GitHub UI" || echo "No changes to commit"
           git push
