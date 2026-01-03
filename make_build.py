@@ -70,7 +70,7 @@ def generate_html():
 <body>
     <div id="header">
         <div class="search-group">
-            <input type="text" id="comment-input" class="comment-input" placeholder="히오스 빌드 테스트 버전" oninput="updateComment(this.value)" value="https://github.com/SIN0NIS/hots_talent_build_auto_git">
+            <input type="text" id="comment-input" class="comment-input" value="https://github.com/SIN0NIS/hots_talent_build_auto_git" readonly style="cursor: default; pointer-events: none; opacity: 0.6;">
             <div style="display:flex; gap:8px;">
                 <input type="text" id="hero-search" class="search-box" placeholder="영웅 검색 또는 코드 입력..." onclick="showList()" oninput="handleSearch(this.value)">
                 <button onclick="loadFromCode()" style="padding:0 15px; background:var(--p); color:white; border:none; border-radius:6px; font-weight:bold;">로드</button>
@@ -80,8 +80,8 @@ def generate_html():
     </div>
     <div id="capture-area">
         <div id="welcome-area">
-            <div id="comment-display">SINONIS입니다</div>
-            <div style="font-size:12px; color:#555;">영웅을 선택하면 상세 정보가 나타납니다.</div>
+            <div id="comment-display">히오스 빌드 사이트 입니다. 상단 주소 참고해주세요. </div>
+            <div style="font-size:20px; color:#555;">영웅을 선택하면 상세 정보가 나타납니다.</div>
         </div>
         <div id="hero-stat-container">
             <div id="hero-title-area" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
@@ -231,4 +231,5 @@ def generate_html():
 
 if __name__ == "__main__":
     generate_html()
+
 
