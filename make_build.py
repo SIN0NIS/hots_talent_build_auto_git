@@ -189,11 +189,23 @@ def generate_html():
             if(currentHeroData) {{ renderStats(); renderAbilities(); selectedTalents.forEach((tn, ti) => {{ if(tn > 0) toggleTalent(ti, tn, document.querySelector(`.t-node-${{ti}}-${{tn}}`)); }}); }}
         }}
         function renderStats() {{
-            const h = currentHeroData; const l = h.life; const w = (h.weapons && h.weapons[0]) ? h.weapons[0] : {{damage:0, range:0, period:1, damageScale:0.04}};
-            const c = (b, s, lv) => (b * Math.pow(1 + (s || 0.04), lv - 1)).toFixed(1);
-            const sArr = [{{l:"체력", v:c(l.amount, l.scale, currentLevel), s:l.scale}}, {{l:"공격력", v:c(w.damage, w.damageScale, currentLevel), s:w.damageScale}}, {{l:"사거리", v:w.range, s:0}}, {{l:"피격범위", v:h.radius, s:0}}];
-            document.getElementById("stat-grid").innerHTML = sArr.map(s => `<div class="stat-item"><span style="color:#888;">${{s.l}} ${{s.s > 0 ? `<span style="color:var(--green);font-size:10px;">(+${{(s.s*100).toFixed(0)}}%)</span>` : ""}}</span><b class="stat-value">${{s.v}}</b></div>`).join("");
-        }}
+            const h = currentHeroData; 
+            const l = h.life; 
+            const e = h.energy || {{ amount: 0, scale: 0 }};
+            const w = (h.weapons && h.weapons[0]) ? h.weapons[0] : {{damage:0, range:0, period:1, damageScale:0.04}};
+            const c = (b, s, lv) => (b * Math.pow(1 + (s || 0.04), lv - 1)).toFixed(1);
+            const sArr = [
+                {{l:"체력", v:c(l.amount, l.scale, currentLevel), s:l.scale}}, 
+                {{l:"마나", v:e.amount > 0 ? c(e.amount, e.scale, currentLevel) : "없음", s:e.amount > 0 ? e.scale : 0}},
+                {{l:"공격력", v:c(w.damage, w.damageScale, currentLevel), s:w.damageScale}}, 
+                {{l:"공격사거리", v:w.range.toFixed(1), s:0}}, 
+                {{l:"공격주기", v:w.period.toFixed(2) + "s", s:0}},
+                {{l:"피격크기", v:h.radius.toFixed(2), s:0}}
+            ];
+            document.getElementById("stat-grid").innerHTML = sArr.map(s => `<div class="stat-item"><span style="color:#888;">${{s.l}} ${{s.s > 0 ? `<span style="color:var(--green);font-size:10px;">(+${{(s.s*100).toFixed(0)}}%)</span>` : ""}}</span><b class="stat-value">${{s.v}}</b></div>`).join("");
+          0 }}
+
+        
         function updateUI() {{
             const sum = selectedTalents.map((tn, ti) => tn === 0 ? `<div style="width:17px;height:17px;border:1px dashed #333;border-radius:3px;"></div>` : `<img src="${{imgBase}}${{currentTalentNodes[ti][tn-1].icon}}" class="summary-img">`).join("");
             document.getElementById("selected-summary").innerHTML = sum;
@@ -219,3 +231,4 @@ def generate_html():
 
 if __name__ == "__main__":
     generate_html()
+
