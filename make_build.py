@@ -166,18 +166,18 @@ def generate_html():
             const container = document.getElementById("ability-container");
             if(!currentHeroData.abilities) return;
             const abs = currentHeroData.abilities;
-            // Q, W, E, Trait, Z 순서에 더해 Active 추가
-            const targetTypes = ["Q", "W", "E", "activable", "Trait", "Z"];
+            const targetTypes = ["Q", "W", "E", "Trait", "Z", "Active"];
             let html = "";
+            
+            // basic, trait, mount 리스트와 함께 'activable' 항목을 명시적으로 포함
             const allAbilities = [
                 ...(abs.basic || []), 
                 ...(abs.trait || []), 
                 ...(abs.mount || []), 
-                ...(abs.active || [])
+                ...(abs.activable || [])  // 'activable' 키워드 추가
             ];
             
             targetTypes.forEach(type => {{
-                // 해당 타입의 모든 스킬을 찾음 (Active가 여러 개일 수 있으므로 filter 사용)
                 const skills = allAbilities.filter(a => a.abilityType === type);
                 skills.forEach(skill => {{
                     let typeLabel = skill.abilityType;
@@ -277,11 +277,9 @@ def generate_html():
 </body>
 </html>"""
 
-    # 5. 파일 저장
     with open(output_file, 'w', encoding='utf-8') as f:
         f.write(html_content)
 
-    # 6. 메인 페이지(hots_talent_build.html) 업데이트
     main_page = f"""<!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -300,4 +298,3 @@ def generate_html():
 
 if __name__ == "__main__":
     generate_html()
-
