@@ -60,7 +60,7 @@ def generate_html():
         #footer {{ position: fixed; bottom: 0; width: 100%; background: rgba(0,0,0,0.95); border-top: 2px solid var(--p); padding: 10px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: 8px; backdrop-filter: blur(10px); z-index: 1500; }}
         
         /* 요약 아이콘 크기 수정 부분 */
-        .summary-img {{ width: 17px; height: 17px; border-radius: 3px; border: 1px solid var(--gold); }}
+        .summary-img {{ width: 30px; height: 30px; border-radius: 3px; border: 1px solid var(--gold); }}
     </style>
 </head>
 <body>
@@ -252,3 +252,4 @@ def generate_html():
 
 if __name__ == "__main__":
     generate_html()
+
