@@ -58,9 +58,9 @@ def generate_html():
         .stat-value {{ color: #fff; font-weight: bold; font-size: 12px; }}
         
         .ability-list {{ border-top: 1px solid #333; padding-top: 8px; display: flex; flex-direction: column; gap: 8px; }}
-        .ability-item {{ display: flex; gap: 8px; align-items: flex-start; background: #111; padding: 6px; border-radius: 6px; }}
-        .ability-icon {{ width: 30px; height: 30px; border: 1px solid #444; border-radius: 4px; flex-shrink: 0; }}
-        .ability-text {{ flex: 1; font-size: 10px; color: #ccc; line-height: 1.3; }}
+        .ability-item {{ display: flex; gap: 10px; align-items: flex-start; background: #111; padding: 8px; border-radius: 6px; }}
+        .ability-icon {{ width: 34px; height: 34px; border: 1px solid #444; border-radius: 4px; flex-shrink: 0; }}
+        .ability-text {{ flex: 1; font-size: 11px; color: #ccc; line-height: 1.4; }}
         .ability-name {{ font-weight: bold; color: var(--blue); font-size: 11px; display: block; margin-bottom: 2px; }}
 
         .tier-row {{ display: flex; align-items: center; background: var(--card); padding: 6px 8px; border-radius: 6px; border-left: 4px solid var(--p); gap: 8px; min-height: 55px; margin: 3px 5px; box-sizing: border-box; }}
@@ -78,7 +78,7 @@ def generate_html():
         <div class="search-group">
             <input type="text" id="comment-input" class="comment-input" value="https://github.com/SIN0NIS/hots_talent_build_auto_git" readonly onclick="window.open(this.value, '_blank')">
             <div style="display:flex; gap:6px;">
-                <input type="text" id="hero-search" class="search-box" placeholder="영웅 검색..." onclick="showList()" oninput="handleSearch(this.value)">
+                <input type="text" id="hero-search" class="search-box" placeholder="영웅 검색 또는 코드 입력..." onclick="showList()" oninput="handleSearch(this.value)">
                 <button onclick="loadFromCode()" style="padding:0 15px; background:var(--p); color:white; border:none; border-radius:6px; font-weight:bold; font-size:13px;">로드</button>
             </div>
         </div>
@@ -111,7 +111,7 @@ def generate_html():
         <div id="main-content"></div>
     </div>
     <div id="footer">
-        <div id="selected-summary" style="display:flex; gap:4px; min-height:20px;"></div>
+        <div id="selected-summary" style="display:flex; gap:4px; min-height:45px;"></div>
         <div style="display:flex; gap:8px; width:100%;">
             <div id="build-code" onclick="copyCode()" style="flex:3; font-size:11px; color:var(--gold); background:#1a1a1a; padding:8px; border-radius:6px; border:1px dashed var(--gold); text-align:center;">[영웅 선택]</div>
             <button onclick="takeScreenshot()" style="flex:1.2; background:var(--p); color:white; border:none; border-radius:6px; font-weight:bold; font-size:13px;">📸 저장</button>
@@ -122,6 +122,20 @@ def generate_html():
         const heroList = {json.dumps(hero_list, ensure_ascii=False)};
         const imgBase = "{img_cdn_base}";
         let currentHeroData = null; let currentLevel = 1; let selectedTalents = []; let currentTalentNodes = [];
+
+        // 자원 이름 한글 매칭 사전
+        const energyMap = {{
+            "Mana": "마나",
+            "Scrap": "고철",
+            "Fury": "분노",
+            "Rage": "광기",
+            "Energy": "기력",
+            "Brew": "취기",
+            "Essence": "정수",
+            "Focus": "집중",
+            "Despair": "절망",
+            "Soul": "영혼"
+        }};
 
         function createSliderTicks() {{
             const container = document.getElementById("slider-ticks");
@@ -134,19 +148,12 @@ def generate_html():
             container.innerHTML = html;
         }}
 
-        function getChosung(str) {{
-            const cho = ["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
-            let res = ""; for(let i=0; i<str.length; i++) {{
-                let c = str.charCodeAt(i) - 44032; if(c>-1 && c<11172) res += cho[Math.floor(c/588)]; else res += str.charAt(i);
-            }} return res;
-        }}
         function handleSearch(v) {{
-            const s = v.replace(/\s/g, "").toLowerCase(); const cho = getChosung(s);
-            const fil = heroList.filter(h => {{ const n = h.name.replace(/\s/g, "").toLowerCase(); return n.includes(s) || getChosung(n).includes(cho); }});
+            const s = v.replace(/\s/g, "").toLowerCase();
+            const fil = heroList.filter(h => h.name.replace(/\s/g, "").toLowerCase().includes(s));
             renderList(fil); document.getElementById("hero-list-dropdown").style.display = "block";
         }}
         
-        // 툴팁 내 성장치 표기 수정 (성장치n -> (+n.00%) 형식)
         function processTooltip(t, lv) {{
             if(!t) return ""; let p = t.replace(/<[^>]*>?/gm, "");
             p = p.replace(/(\d+(?:\.\d+)?)\s*~~(0\.\d+)~~/g, (m, b, s) => {{
@@ -156,9 +163,10 @@ def generate_html():
             return p.replace(/~~(0\.\d+)~~/g, (m, s) => "(+" + (parseFloat(s)*100).toFixed(2) + "%)");
         }}
 
-        function selectHero(id, code = null) {{
+        function selectHero(id, codeArray = null) {{
             document.getElementById("welcome-area").style.display = "none";
             document.getElementById("hero-list-dropdown").style.display = "none";
+            document.getElementById("hero-search").value = "";
             currentHeroData = hotsData[id];
             document.getElementById("hero-info-title").innerText = currentHeroData.name;
             document.getElementById("hero-role-badge").innerText = currentHeroData.expandedRole || "미분류";
@@ -175,7 +183,17 @@ def generate_html():
                 h += `</div><div class="t-info-display" id="desc-${{i}}">선택...</div></div>`;
             }});
             document.getElementById("main-content").innerHTML = h;
-            renderAbilities(); renderStats(); updateUI();
+            renderAbilities(); renderStats(); 
+            if(codeArray) {{
+                codeArray.forEach((val, idx) => {{
+                    const talentNum = parseInt(val);
+                    if(talentNum > 0) {{
+                        const targetImg = document.querySelector(`.t-node-${{idx}}-${{talentNum}}`);
+                        if(targetImg) toggleTalent(idx, talentNum, targetImg);
+                    }}
+                }});
+            }}
+            updateUI();
         }}
 
         function toggleTalent(ti, tn, el) {{
@@ -201,14 +219,18 @@ def generate_html():
         }}
 
         function renderStats() {{
-            const h = currentHeroData; const l = h.life; const e = h.energy || {{ amount: 0, scale: 0 }};
+            const h = currentHeroData; const l = h.life; const e = h.energy || {{ amount: 0, scale: 0, type: "None" }};
             const w = (h.weapons && h.weapons[0]) ? h.weapons[0] : {{damage:0, range:0, period:1, damageScale:0.04}};
             const c = (b, s, lv) => (b * Math.pow(1 + (s || 0.04), lv - 1)).toFixed(0);
             
-            // 캐릭터 스탯 성장치 표기 수정 (+n.00%)
+            // 자원 이름 결정 로직
+            const energyLabel = energyMap[e.type] || e.type;
+            const resourceName = e.amount > 0 ? energyLabel : "자원";
+            const resourceValue = e.amount > 0 ? c(e.amount, e.scale, currentLevel) : "없음";
+
             const sArr = [
                 {{l:"체력", v:c(l.amount, l.scale, currentLevel), g: l.scale}}, 
-                {{l:"마나", v:e.amount > 0 ? c(e.amount, e.scale, currentLevel) : "없음", g: e.amount > 0 ? e.scale : 0}},
+                {{l:resourceName, v:resourceValue, g: e.amount > 0 ? e.scale : 0}},
                 {{l:"공격력", v:c(w.damage, w.damageScale, currentLevel), g: w.damageScale}}, 
                 {{l:"공격주기", v:w.period.toFixed(2) + "s", g: 0}},
                 {{l:"공격사거리", v:w.range.toFixed(1), g: 0}}, 
@@ -224,10 +246,9 @@ def generate_html():
         function renderAbilities() {{
             const container = document.getElementById("ability-container");
             const abs = currentHeroData.abilities;
-            const targetTypes = ["Q", "W", "E", "Trait", "Z", "Active"];
-            let html = "";
             const all = [...(abs.basic || []), ...(abs.trait || []), ...(abs.mount || []), ...(abs.activable || [])];
-            targetTypes.forEach(type => {{
+            let html = "";
+            ["Q", "W", "E", "Trait", "Z", "Active"].forEach(type => {{
                 all.filter(a => a.abilityType === type).forEach(skill => {{
                     html += `<div class="ability-item"><img src="${{imgBase}}${{skill.icon}}" class="ability-icon"><div class="ability-text">
                         <span class="ability-name"><span style="color:var(--gold)">[${{type === "Trait" ? "D" : type}}]</span> ${{skill.name}}</span>
@@ -238,9 +259,18 @@ def generate_html():
         }}
 
         function updateUI() {{
-            const sum = selectedTalents.map((tn, ti) => tn === 0 ? `<div style="width:45px;height:45px;border:1px dashed #333;border-radius:2px;"></div>` : `<img src="${{imgBase}}${{currentTalentNodes[ti][tn-1].icon}}" class="summary-img">`).join("");
+            const sum = selectedTalents.map((tn, ti) => tn === 0 ? `<div style="width:45px;height:45px;border:1px dashed #333;border-radius:3px;"></div>` : `<img src="${{imgBase}}${{currentTalentNodes[ti][tn-1].icon}}" class="summary-img">`).join("");
             document.getElementById("selected-summary").innerHTML = sum;
             document.getElementById("build-code").innerText = currentHeroData ? `[T${{selectedTalents.join("")}},${{currentHeroData.hyperlinkId}}]` : "영웅 선택";
+        }}
+
+        function loadFromCode() {{
+            const val = document.getElementById("hero-search").value;
+            const m = val.match(/\\[T(\\d+),(.+?)\\]/);
+            if(!m) return alert("형식 오류: [T1231231,HeroId] 형식이어야 합니다.");
+            const entry = Object.entries(hotsData).find(([id, d]) => d.hyperlinkId === m[2]);
+            if(entry) selectHero(entry[0], m[1].split(""));
+            else alert("영웅을 찾을 수 없습니다.");
         }}
 
         function renderList(l) {{ document.getElementById("hero-list-dropdown").innerHTML = l.map(h => `<div class="hero-item" onclick="selectHero('${{h.id}}')">${{h.name}}</div>`).join(""); }}
