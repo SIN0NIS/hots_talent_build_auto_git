@@ -22,61 +22,54 @@ def generate_html():
 
     hero_list = sorted([{"id": k, "name": v['name'], "hId": v.get('hyperlinkId', k)} for k, v in data.items() if 'name' in v], key=lambda x: x['name'])
 
-    # 4. HTML 템플릿 작성
+    # 4. HTML 템플릿 작성 (모바일 최적화 스타일 적용)
     html_content = f"""<!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
     <title>히오스 빌드 메이커 Pro</title>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <style>
         :root {{ --p: #a333ff; --bg: #0b0b0d; --card: #16161a; --blue: #00d4ff; --gold: #ffd700; --green: #00ff00; }}
-        body {{ margin: 0; background: var(--bg); color: white; font-family: sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }}
+        body {{ margin: 0; background: var(--bg); color: white; font-family: sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; width: 100%; }}
         #header {{ padding: 10px; background: #1a1a1e; border-bottom: 1px solid #333; flex-shrink: 0; position: relative; z-index: 2000; }}
         .search-group {{ display: flex; flex-direction: column; gap: 8px; }}
         .search-box {{ flex: 1; padding: 12px; background: #222; color: white; border: 1px solid var(--p); border-radius: 6px; font-size: 14px; outline: none; }}
         .comment-input {{ width: 100%; padding: 8px; background: #111; color: var(--green); border: 1px solid #444; border-radius: 4px; font-size: 12px; }}
-        
         #hero-list-dropdown {{ position: absolute; width: calc(100% - 20px); max-height: 300px; background: #2a2a2a; overflow-y: auto; z-index: 3000; border-radius: 4px; display: none; border: 1px solid var(--p); margin-top: 5px; }}
         .hero-item {{ padding: 12px; border-bottom: 1px solid #333; cursor: pointer; }}
-        .hero-item:hover {{ background: var(--p); }}
-        
         #capture-area {{ flex: 1; display: flex; flex-direction: column; overflow-y: auto; padding-bottom: 220px; background: #0b0b0d; }}
         #welcome-area {{ padding: 60px 20px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; }}
         #comment-display {{ color: var(--green); font-size: 18px; font-weight: bold; margin-bottom: 10px; white-space: pre-wrap; }}
-        
         #hero-stat-container {{ background: #1a1a20; margin: 10px; padding: 15px; border-radius: 8px; border: 1px solid #333; display: none; }}
         .stat-grid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 15px; }}
         .stat-item {{ background: #111; padding: 8px; border-radius: 4px; font-size: 12px; display: flex; flex-direction: column; gap: 2px; }}
         .stat-value {{ color: #fff; font-weight: bold; font-size: 13px; }}
-        
         .ability-list {{ border-top: 1px solid #333; padding-top: 10px; display: flex; flex-direction: column; gap: 10px; }}
         .ability-item {{ display: flex; gap: 10px; align-items: flex-start; background: #111; padding: 8px; border-radius: 6px; }}
         .ability-icon {{ width: 34px; height: 34px; border: 1px solid #444; border-radius: 4px; flex-shrink: 0; }}
         .ability-text {{ flex: 1; font-size: 11px; color: #ccc; line-height: 1.4; }}
         .ability-name {{ font-weight: bold; color: var(--blue); display: block; margin-bottom: 2px; }}
-
         .tier-row {{ display: flex; align-items: center; background: var(--card); padding: 8px 10px; border-radius: 6px; border-left: 5px solid var(--p); gap: 10px; min-height: 65px; margin: 3px 5px; }}
         .tier-label {{ color: var(--blue); font-weight: bold; width: 35px; flex-shrink: 0; font-size: 12px; text-align: center; }}
         .t-icon {{ width: 40px; height: 40px; border: 1px solid #444; cursor: pointer; border-radius: 5px; background: #000; }}
         .t-icon.selected {{ border-color: var(--gold); box-shadow: 0 0 10px var(--gold); transform: scale(1.1); z-index: 10; }}
         .t-info-display {{ flex: 1; font-size: 11px; color: #ccc; line-height: 1.4; padding-left: 10px; border-left: 1px solid #444; height: 46px; overflow-y: auto; }}
-        
         #footer {{ position: fixed; bottom: 0; width: 100%; background: rgba(0,0,0,0.95); border-top: 2px solid var(--p); padding: 10px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: 8px; backdrop-filter: blur(10px); z-index: 1500; }}
-        .summary-img {{ width: 45px; height: 45px; border-radius: 3px; border: 1px solid var(--gold); }}
+        .summary-img {{ width: 17px; height: 17px; border-radius: 3px; border: 1px solid var(--gold); }}
     </style>
 </head>
 <body>
     <div id="header">
         <div class="search-group">
-           	<div style="position: relative;">
-		    <input type="text" id="comment-input" class="comment-input" 
-	    		value="https://github.com/SIN0NIS/hots_talent_build_auto_git" 
-	    		readonly 
-	    		style="cursor: pointer; color: var(--blue); text-decoration: underline;" 
-	    		onclick="window.open(this.value, '_blank')">
-        	</div>
+            <div style="position: relative;">
+                <input type="text" id="comment-input" class="comment-input" 
+                    value="https://github.com/SIN0NIS/hots_talent_build_auto_git" 
+                    readonly 
+                    style="cursor: pointer; color: var(--blue); text-decoration: underline;" 
+                    onclick="window.open(this.value, '_blank')">
+            </div>
             <div style="display:flex; gap:8px;">
                 <input type="text" id="hero-search" class="search-box" placeholder="영웅 검색 또는 코드 입력..." onclick="showList()" oninput="handleSearch(this.value)">
                 <button onclick="loadFromCode()" style="padding:0 15px; background:var(--p); color:white; border:none; border-radius:6px; font-weight:bold;">로드</button>
@@ -195,12 +188,10 @@ def generate_html():
             if(currentHeroData) {{ renderStats(); renderAbilities(); selectedTalents.forEach((tn, ti) => {{ if(tn > 0) toggleTalent(ti, tn, document.querySelector(`.t-node-${{ti}}-${{tn}}`)); }}); }}
         }}
         function renderStats() {{
-            const h = currentHeroData; 
-            const l = h.life; 
-            const e = h.energy || {{ amount: 0, scale: 0 }};
+            const h = currentHeroData; const l = h.life; const e = h.energy || {{ amount: 0, scale: 0 }};
             const w = (h.weapons && h.weapons[0]) ? h.weapons[0] : {{damage:0, range:0, period:1, damageScale:0.04}};
-            const c = (b, s, lv) => (b * Math.pow(1 + (s || 0.04), lv - 1)).toFixed(1);
-            const sArr = [
+            const c = (b, s, lv) => (b * Math.pow(1 + (s || 0.04), lv - 1)).toFixed(1);
+            const sArr = [
                 {{l:"체력", v:c(l.amount, l.scale, currentLevel), s:l.scale}}, 
                 {{l:"마나", v:e.amount > 0 ? c(e.amount, e.scale, currentLevel) : "없음", s:e.amount > 0 ? e.scale : 0}},
                 {{l:"공격력", v:c(w.damage, w.damageScale, currentLevel), s:w.damageScale}}, 
@@ -208,10 +199,8 @@ def generate_html():
                 {{l:"공격주기", v:w.period.toFixed(2) + "s", s:0}},
                 {{l:"피격크기", v:h.radius.toFixed(2), s:0}}
             ];
-            document.getElementById("stat-grid").innerHTML = sArr.map(s => `<div class="stat-item"><span style="color:#888;">${{s.l}} ${{s.s > 0 ? `<span style="color:var(--green);font-size:10px;">(+${{(s.s*100).toFixed(0)}}%)</span>` : ""}}</span><b class="stat-value">${{s.v}}</b></div>`).join("");
-          0 }}
-
-        
+            document.getElementById("stat-grid").innerHTML = sArr.map(s => `<div class="stat-item"><span style="color:#888;">${{s.l}} ${{s.s > 0 ? `<span style="color:var(--green);font-size:10px;">(+${{(s.s*100).toFixed(0)}}%)</span>` : ""}}</span><b class="stat-value">${{s.v}}</b></div>`).join("");
+        }}
         function updateUI() {{
             const sum = selectedTalents.map((tn, ti) => tn === 0 ? `<div style="width:17px;height:17px;border:1px dashed #333;border-radius:3px;"></div>` : `<img src="${{imgBase}}${{currentTalentNodes[ti][tn-1].icon}}" class="summary-img">`).join("");
             document.getElementById("selected-summary").innerHTML = sum;
@@ -231,12 +220,29 @@ def generate_html():
 </body>
 </html>"""
 
+    # --- [여기가 핵심 수정 부분] ---
+    # hots_talent_build.html 메인 페이지 생성 시 모바일 뷰포트와 스타일 강제 적용
+    main_page = f"""<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+    <title>히오스 빌드 메이커 - 통합</title>
+    <style>
+        body, html {{ margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; background: #0b0b0d; }}
+        iframe {{ width: 100%; height: 100%; border: none; display: block; }}
+    </style>
+</head>
+<body>
+    <iframe src="{output_file}"></iframe>
+</body>
+</html>"""
+
     with open(output_file, 'w', encoding='utf-8') as f: f.write(html_content)
     with open('hots_talent_build.html', 'w', encoding='utf-8') as f:
-        f.write(f'<!DOCTYPE html><html><body style="margin:0;"><iframe src="{output_file}" style="width:100%; height:100vh; border:none;"></iframe></body></html>')
+        f.write(main_page)
+    
+    print(f"🎉 작업 완료: {output_file} 및 모바일 최적화 메인 페이지 업데이트")
 
 if __name__ == "__main__":
     generate_html()
-
-
-
