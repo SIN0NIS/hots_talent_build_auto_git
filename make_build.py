@@ -17,6 +17,10 @@ def generate_html():
     output_file = f"index_{timestamp}.html"
     img_cdn_base = "https://raw.githubusercontent.com/SIN0NIS/images/main/abilitytalents/"
 
+    print(f"사용 데이터: {json_path}")
+    print(f"생성 파일: {output_file}")
+
+    # 3. 데이터 로드
     with open(json_path, 'r', encoding='utf-8') as f:
         data = json.load(f)
 
@@ -58,7 +62,7 @@ def generate_html():
         .stat-value {{ color: #fff; font-weight: bold; font-size: 12px; }}
         
         .ability-list {{ border-top: 1px solid #333; padding-top: 8px; display: flex; flex-direction: column; gap: 8px; }}
-        .ability-item {{ display: flex; gap: 8px; align-items: flex-start; background: #111; padding: 6px; border-radius: 6px; }}
+        .ability-item {{ display: flex; gap: 10px; align-items: flex-start; background: #111; padding: 8px; border-radius: 6px; }}
         .ability-icon {{ width: 30px; height: 30px; border: 1px solid #444; border-radius: 4px; flex-shrink: 0; }}
         .ability-text {{ flex: 1; font-size: 10px; color: #ccc; line-height: 1.3; }}
         .ability-name {{ font-weight: bold; color: var(--blue); font-size: 11px; display: block; margin-bottom: 2px; }}
@@ -233,8 +237,6 @@ def generate_html():
             
             const energyLabel = energyMap[e.type] || e.type;
             const isMana = e.type === "Mana";
-            
-            // 마나일때만 4% 성장 적용, 나머지는 고정 (e.scale이 데이터에 있어도 isMana가 아니면 무시)
             const currentEnergyValue = isMana ? calc(e.amount, 0.04, currentLevel) : e.amount.toFixed(0);
             const currentEnergyScale = isMana ? 0.04 : 0;
 
@@ -295,11 +297,12 @@ def generate_html():
 </body>
 </html>"""
 
+    # hots_talent_build.html (통합 페이지) 생성 로직
     main_page = f"""<!DOCTYPE html>
-<html lang=\"ko\">
+<html lang="ko">
 <head>
-    <meta charset=\"UTF-8\">
-    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no\">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
     <title>히오스 빌드 메이커 - 통합</title>
     <style>
         body, html {{ margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; background: #0b0b0d; }}
@@ -307,9 +310,9 @@ def generate_html():
     </style>
 </head>
 <body>
-    <iframe src=\"{output_file}\"></iframe>
+    <iframe src="{output_file}"></iframe>
 </body>
-</html>\"\"\"
+</html>"""
 
     with open(output_file, 'w', encoding='utf-8') as f: f.write(html_content)
     with open('hots_talent_build.html', 'w', encoding='utf-8') as f: f.write(main_page)
