@@ -82,13 +82,15 @@ def generate_html():
         #footer {{ position: fixed; bottom: 0; width: 100%; background: rgba(0,0,0,0.95); border-top: 2px solid var(--p); padding: 10px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: 6px; backdrop-filter: blur(10px); z-index: 1500; }}
         .summary-img {{ width: 45px; height: 45px; border-radius: 3px; border: 1px solid var(--gold); }}
 
-        /* 캡처용 임시 스타일 (JS에서 사용) */
-        .cap-row {{ display: flex; align-items: flex-start; gap: 15px; border-bottom: 1px solid #333; padding: 15px 0; }}
-        .cap-lv {{ color: var(--blue); font-size: 20px; font-weight: bold; width: 50px; flex-shrink: 0; }}
-        .cap-img {{ width: 60px; height: 60px; border: 2px solid var(--gold); border-radius: 8px; flex-shrink: 0; }}
+        /* 캡처용 전용 스타일 */
+        .cap-row {{ display: flex; align-items: center; gap: 15px; border-bottom: 1px solid #333; padding: 15px 0; }}
+        .cap-lv {{ color: var(--blue); font-size: 22px; font-weight: bold; width: 60px; text-align: center; flex-shrink: 0; }}
+        .cap-main-icon {{ width: 70px; height: 70px; border: 3px solid var(--gold); border-radius: 10px; flex-shrink: 0; box-shadow: 0 0 10px rgba(255,215,0,0.3); }}
         .cap-content {{ flex: 1; }}
-        .cap-tname {{ color: white; font-size: 18px; font-weight: bold; margin-bottom: 4px; }}
+        .cap-tname {{ color: white; font-size: 20px; font-weight: bold; margin-bottom: 4px; }}
         .cap-tdesc {{ color: #bbb; font-size: 14px; line-height: 1.4; }}
+        .cap-unselected-list {{ display: flex; gap: 6px; margin-top: 8px; }}
+        .cap-sub-icon {{ width: 32px; height: 32px; border: 1px solid #555; border-radius: 4px; opacity: 0.5; grayscale: 0.5; }}
     </style>
 </head>
 <body>
@@ -297,51 +299,63 @@ def generate_html():
         function showList() {{ handleSearch(""); }}
         function copyCode() {{ navigator.clipboard.writeText(document.getElementById("build-code").innerText); alert("복사 완료!"); }}
 
-        // 특성 중심 고화질 캡처 기능
+        // 개선된 캡처 기능 (선택 안한 특성 포함)
         function takeScreenshot() {{
             if (!currentHeroData) return alert("영웅을 선택해주세요.");
             
-            // 1. 임시 캡처용 컨테이너 생성
             const tempDiv = document.createElement('div');
-            tempDiv.style.cssText = "position:absolute; left:-9999px; top:0; width:500px; background:#0b0b0d; padding:25px; border:2px solid #a333ff; color:white; font-family:sans-serif;";
+            tempDiv.style.cssText = "position:absolute; left:-9999px; top:0; width:600px; background:#0b0b0d; padding:30px; border:2px solid #a333ff; color:white; font-family:sans-serif;";
             
             let innerHTML = `
-                <div style="text-align:center; margin-bottom:20px; border-bottom:1px solid #444; padding-bottom:15px;">
-                    <div style="font-size:32px; font-weight:bold; color:#a333ff; margin-bottom:5px;">${{currentHeroData.name}}</div>
-                    <div style="font-size:16px; color:#00d4ff;">${{currentHeroData.expandedRole || 'Heroes of the Storm'}} Build</div>
+                <div style="text-align:center; margin-bottom:25px; border-bottom:1px solid #444; padding-bottom:15px;">
+                    <div style="font-size:36px; font-weight:bold; color:#a333ff; margin-bottom:5px;">${{currentHeroData.name}}</div>
+                    <div style="font-size:16px; color:#00d4ff;">${{currentHeroData.expandedRole || 'Heroes of the Storm'}} Talent Build</div>
                 </div>
             `;
 
-            let hasSelection = false;
             const lvKeys = Object.keys(currentHeroData.talents).filter(l => currentHeroData.talents[l].length > 0).sort((a,b) => parseInt(a.replace({js_regex_digit},"")) - parseInt(b.replace({js_regex_digit},"")));
 
             selectedTalents.forEach((tn, ti) => {{
+                const talentsInTier = currentTalentNodes[ti];
+                const lvLabel = lvKeys[ti].replace({js_regex_digit},"") + "Lv";
+                
+                innerHTML += `<div class="cap-row">
+                    <div class="cap-lv">${{lvLabel}}</div>`;
+
                 if (tn > 0) {{
-                    hasSelection = true;
-                    const t = currentTalentNodes[ti][tn-1];
-                    const lvLabel = lvKeys[ti].replace({js_regex_digit},"") + "Lv";
+                    // 특성을 선택한 경우: 선택한 특성 상세 + 나머지 아이콘
+                    const selectedT = talentsInTier[tn-1];
                     innerHTML += `
-                        <div class="cap-row">
-                            <div class="cap-lv">${{lvLabel}}</div>
-                            <img src="${{imgBase}}${{t.icon}}" class="cap-img">
-                            <div class="cap-content">
-                                <div class="cap-tname">${{t.name}}</div>
-                                <div class="cap-tdesc">${{processTooltip(t.fullTooltip, currentLevel)}}</div>
+                        <img src="${{imgBase}}${{selectedT.icon}}" class="cap-main-icon">
+                        <div class="cap-content">
+                            <div class="cap-tname">${{selectedT.name}}</div>
+                            <div class="cap-tdesc">${{processTooltip(selectedT.fullTooltip, currentLevel)}}</div>
+                            <div class="cap-unselected-list">
+                                ${{talentsInTier.map((t, idx) => (idx + 1 !== tn) ? `<img src="${{imgBase}}${{t.icon}}" class="cap-sub-icon">` : "").join("")}}
                             </div>
                         </div>
                     `;
-                }}
+                } else {{
+                    // 특성을 선택하지 않은 경우: 아이콘들만 나란히 표시
+                    innerHTML += `
+                        <div class="cap-content" style="display:flex; align-items:center; gap:10px;">
+                            <div style="color:#555; font-size:14px; margin-right:10px;">[미선택]</div>
+                            <div class="cap-unselected-list" style="margin-top:0; opacity:1;">
+                                ${{talentsInTier.map(t => `<img src="${{imgBase}}${{t.icon}}" class="cap-sub-icon" style="opacity:0.8; grayscale:0; width:45px; height:45px;">`).join("")}}
+                            </div>
+                        </div>
+                    `;
+                }
+                innerHTML += `</div>`;
             }});
 
-            if (!hasSelection) return alert("선택된 특성이 없습니다.");
-
-            innerHTML += `<div style="margin-top:20px; text-align:right; font-size:12px; color:#555;">Generated by Build Maker Pro</div>`;
+            innerHTML += `<div style="margin-top:25px; text-align:center; font-size:13px; color:#444;">Generated by SIN0NIS Build Maker Pro</div>`;
             tempDiv.innerHTML = innerHTML;
             document.body.appendChild(tempDiv);
 
             html2canvas(tempDiv, {{ useCORS:true, backgroundColor:"#0b0b0d", scale:2 }}).then(canvas => {{
                 const link = document.createElement('a');
-                link.download = `${{currentHeroData.name}}_build.png`;
+                link.download = `${{currentHeroData.name}}_build_summary.png`;
                 link.href = canvas.toDataURL();
                 link.click();
                 document.body.removeChild(tempDiv);
@@ -351,6 +365,7 @@ def generate_html():
 </body>
 </html>"""
 
+    # 메인 페이지 iframe 구조
     main_page = f"""<!DOCTYPE html>
 <html lang="ko">
 <head>
