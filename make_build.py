@@ -22,7 +22,7 @@ def generate_html():
 
     hero_list = sorted([{"id": k, "name": v['name'], "hId": v.get('hyperlinkId', k)} for k, v in data.items() if 'name' in v], key=lambda x: x['name'])
 
-    # 4. HTML 템플릿 작성 (모바일 최적화 스타일 적용)
+    # 4. HTML 템플릿 작성
     html_content = f"""<!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -36,11 +36,11 @@ def generate_html():
         #header {{ padding: 10px; background: #1a1a1e; border-bottom: 1px solid #333; flex-shrink: 0; position: relative; z-index: 2000; }}
         .search-group {{ display: flex; flex-direction: column; gap: 8px; }}
         .search-box {{ flex: 1; padding: 12px; background: #222; color: white; border: 1px solid var(--p); border-radius: 6px; font-size: 14px; outline: none; }}
-        .comment-input {{ width: 100%; padding: 8px; background: #111; color: var(--green); border: 1px solid #444; border-radius: 4px; font-size: 12px; }}
+        .comment-input {{ width: 100%; padding: 8px; background: #111; color: var(--blue); border: 1px solid #444; border-radius: 4px; font-size: 11px; text-decoration: underline; box-sizing: border-box; }}
         #hero-list-dropdown {{ position: absolute; width: calc(100% - 20px); max-height: 300px; background: #2a2a2a; overflow-y: auto; z-index: 3000; border-radius: 4px; display: none; border: 1px solid var(--p); margin-top: 5px; }}
         .hero-item {{ padding: 12px; border-bottom: 1px solid #333; cursor: pointer; }}
         #capture-area {{ flex: 1; display: flex; flex-direction: column; overflow-y: auto; padding-bottom: 220px; background: #0b0b0d; }}
-        #welcome-area {{ padding: 60px 20px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; }}
+        #welcome-area {{ padding: 40px 20px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; }}
         #comment-display {{ color: var(--green); font-size: 18px; font-weight: bold; margin-bottom: 10px; white-space: pre-wrap; }}
         #hero-stat-container {{ background: #1a1a20; margin: 10px; padding: 15px; border-radius: 8px; border: 1px solid #333; display: none; }}
         .stat-grid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 15px; }}
@@ -67,7 +67,6 @@ def generate_html():
                 <input type="text" id="comment-input" class="comment-input" 
                     value="https://github.com/SIN0NIS/hots_talent_build_auto_git" 
                     readonly 
-                    style="cursor: pointer; color: var(--blue); text-decoration: underline;" 
                     onclick="window.open(this.value, '_blank')">
             </div>
             <div style="display:flex; gap:8px;">
@@ -143,7 +142,11 @@ def generate_html():
             
             renderAbilities();
             const lvs = Object.keys(currentHeroData.talents).filter(l => currentHeroData.talents[l].length > 0).sort((a,b) => parseInt(a.replace(/\D/g,"")) - parseInt(b.replace(/\D/g,"")));
-            selectedTalents = new Array(lvs.length).fill(0); currentTalentNodes = [];
+            
+            // 영웅 변경 시에만 배열 초기화
+            selectedTalents = new Array(lvs.length).fill(0); 
+            currentTalentNodes = [];
+            
             let h = ''; lvs.forEach((l, i) => {{
                 let n = l.replace(/\D/g,""); if(currentHeroData.hyperlinkId === "Chromie") n = ["1","2","5","8","11","14","18"][i];
                 currentTalentNodes.push(currentHeroData.talents[l]);
@@ -174,18 +177,38 @@ def generate_html():
         }}
         function toggleTalent(ti, tn, el) {{
             const box = document.getElementById("desc-"+ti);
-            if(selectedTalents[ti] === tn) {{ selectedTalents[ti] = 0; el.classList.remove("selected"); box.innerHTML = "특성을 선택하세요."; }}
+            if(selectedTalents[ti] === tn) {{ 
+                selectedTalents[ti] = 0; 
+                el.classList.remove("selected"); 
+                box.innerHTML = "특성을 선택하세요."; 
+            }}
             else {{
-                selectedTalents[ti] = tn; document.querySelectorAll(".t-row-"+ti).forEach(img => img.classList.remove("selected"));
-                el.classList.add("selected"); const t = currentTalentNodes[ti][tn-1];
+                selectedTalents[ti] = tn; 
+                document.querySelectorAll(".t-row-"+ti).forEach(img => img.classList.remove("selected"));
+                el.classList.add("selected"); 
+                const t = currentTalentNodes[ti][tn-1];
                 box.innerHTML = `<b style="color:#fff;">${{t.name}}</b><br>${{processTooltip(t.fullTooltip, currentLevel)}}`;
             }}
             updateUI();
         }}
         function updateLevel(lv) {{
-            currentLevel = parseInt(lv); document.getElementById("level-display").innerText = "LV " + currentLevel;
+            currentLevel = parseInt(lv); 
+            document.getElementById("level-display").innerText = "LV " + currentLevel;
             document.getElementById("level-growth-total").innerText = "(+" + ((Math.pow(1.04, currentLevel - 1) - 1) * 100).toFixed(2) + "%)";
-            if(currentHeroData) {{ renderStats(); renderAbilities(); selectedTalents.forEach((tn, ti) => {{ if(tn > 0) toggleTalent(ti, tn, document.querySelector(`.t-node-${{ti}}-${{tn}}`)); }}); }}
+            
+            if(currentHeroData) {{ 
+                renderStats(); 
+                renderAbilities(); 
+                
+                // 특성 선택 정보를 유지하면서 설명(툴팁)만 수치 업데이트
+                selectedTalents.forEach((tn, ti) => {{ 
+                    if(tn > 0) {{
+                        const box = document.getElementById("desc-"+ti);
+                        const t = currentTalentNodes[ti][tn-1];
+                        box.innerHTML = `<b style="color:#fff;">${{t.name}}</b><br>${{processTooltip(t.fullTooltip, currentLevel)}}`;
+                    }}
+                }}); 
+            }}
         }}
         function renderStats() {{
             const h = currentHeroData; const l = h.life; const e = h.energy || {{ amount: 0, scale: 0 }};
@@ -220,8 +243,6 @@ def generate_html():
 </body>
 </html>"""
 
-    # --- [여기가 핵심 수정 부분] ---
-    # hots_talent_build.html 메인 페이지 생성 시 모바일 뷰포트와 스타일 강제 적용
     main_page = f"""<!DOCTYPE html>
 <html lang="ko">
 <head>
