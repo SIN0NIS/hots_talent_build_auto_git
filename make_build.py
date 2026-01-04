@@ -17,16 +17,23 @@ def generate_html():
     output_file = f"index_{timestamp}.html"
     img_cdn_base = "https://raw.githubusercontent.com/SIN0NIS/images/main/abilitytalents/"
 
-    print(f"사용 데이터: {json_path}")
-    print(f"생성 파일: {output_file}")
-
     # 3. 데이터 로드
     with open(json_path, 'r', encoding='utf-8') as f:
         data = json.load(f)
 
     hero_list = sorted([{"id": k, "name": v['name'], "hId": v.get('hyperlinkId', k)} for k, v in data.items() if 'name' in v], key=lambda x: x['name'])
 
-    # 4. HTML 템플릿 작성
+    # 4. 자바스크립트 내 정규식 백슬래시 문제 해결을 위한 별도 변수 처리
+    # f-string 내부에서 백슬래시 사용을 피하기 위해 미리 정의
+    js_regex_space = r"/\s/g"
+    js_regex_digit = r"/\D/g"
+    js_regex_non_digit = r"/\d/g"
+    js_regex_tooltip = r"/<[^>]*>?/gm"
+    js_regex_scaling = r"/(\d+(?:\.\d+)?)\s*~~(0\.\d+)~~/g"
+    js_regex_simple_scaling = r"/~~(0\.\d+)~~/g"
+    js_regex_build_code = r"/\[T(\d+),(.+?)\]/"
+
+    # 5. HTML 템플릿 작성
     html_content = f"""<!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -68,7 +75,7 @@ def generate_html():
         .ability-name {{ font-weight: bold; color: var(--blue); font-size: 11px; display: block; margin-bottom: 2px; }}
 
         .tier-row {{ display: flex; align-items: center; background: var(--card); padding: 6px 8px; border-radius: 6px; border-left: 4px solid var(--p); gap: 8px; min-height: 55px; margin: 3px 5px; box-sizing: border-box; }}
-        .tier-label {{ color: var(--blue); font-weight: bold; width: 30px; flex-shrink: 0; font-size: 11px; text-align: center; }}
+        .tier-label {{ color: var(--blue); font-weight: bold; width: 35px; flex-shrink: 0; font-size: 11px; text-align: center; }}
         .t-icon {{ width: 36px; height: 36px; border: 1px solid #444; cursor: pointer; border-radius: 5px; background: #000; flex-shrink: 0; }}
         .t-icon.selected {{ border-color: var(--gold); box-shadow: 0 0 6px var(--gold); transform: scale(1.05); z-index: 10; }}
         .t-info-display {{ flex: 1; font-size: 10px; color: #ccc; padding-left: 8px; border-left: 1px solid #444; min-height: 36px; display: flex; align-items: center; }}
@@ -81,14 +88,14 @@ def generate_html():
     <div id="header">
         <div class="search-group">
             <input type="text" id="comment-input" class="comment-input" value="https://github.com/SIN0NIS/hots_talent_build_auto_git" readonly onclick="window.open(this.value, '_blank')">
-            <div style="display:flex; gap:6px;">
+            <div style="display:flex; gap:8px;">
                 <input type="text" id="hero-search" class="search-box" placeholder="영웅 검색 또는 코드 입력..." onclick="showList()" oninput="handleSearch(this.value)">
                 <button onclick="loadFromCode()" style="padding:0 15px; background:var(--p); color:white; border:none; border-radius:6px; font-weight:bold; font-size:13px;">로드</button>
             </div>
         </div>
         <div id="hero-list-dropdown"></div>
     </div>
-    <div id="capture-area">${l.replace(/\D/g,"")}Lv
+    <div id="capture-area">
         <div id="welcome-area">
             <div id="comment-display">히오스 빌드 사이트 입니다.</div>
         </div>
@@ -156,10 +163,10 @@ def generate_html():
         }}
 
         function handleSearch(v) {{
-            const s = v.replace(/\\s/g, "").toLowerCase();
+            const s = v.replace({js_regex_space}, "").toLowerCase();
             const choInput = getChosung(s);
             const fil = heroList.filter(h => {{
-                const n = h.name.replace(/\\s/g, "").toLowerCase();
+                const n = h.name.replace({js_regex_space}, "").toLowerCase();
                 const choHero = getChosung(n);
                 return n.includes(s) || choHero.includes(choInput);
             }});
@@ -167,12 +174,12 @@ def generate_html():
         }}
         
         function processTooltip(t, lv) {{
-            if(!t) return ""; let p = t.replace(/<[^>]*>?/gm, "");
-            p = p.replace(/(\\d+(?:\\.\\d+)?)\\s*~~(0\\.\\d+)~~/g, (m, b, s) => {{
+            if(!t) return ""; let p = t.replace({js_regex_tooltip}, "");
+            p = p.replace({js_regex_scaling}, (m, b, s) => {{
                 const v = parseFloat(b) * Math.pow(1 + parseFloat(s), lv - 1);
                 return "<strong>" + v.toFixed(1) + "</strong>(+" + (parseFloat(s)*100).toFixed(2) + "%)";
             }});
-            return p.replace(/~~(0\\.\\d+)~~/g, (m, s) => "(+" + (parseFloat(s)*100).toFixed(2) + "%)");
+            return p.replace({js_regex_simple_scaling}, (m, s) => "(+" + (parseFloat(s)*100).toFixed(2) + "%)");
         }}
 
         function selectHero(id, codeArray = null) {{
@@ -184,11 +191,12 @@ def generate_html():
             document.getElementById("hero-role-badge").innerText = currentHeroData.expandedRole || "미분류";
             document.getElementById("hero-stat-container").style.display = "block";
             createSliderTicks();
-            const lvs = Object.keys(currentHeroData.talents).filter(l => currentHeroData.talents[l].length > 0).sort((a,b) => parseInt(a.replace(/\\D/g,"")) - parseInt(b.replace(/\\D/g,"")));
+            const lvs = Object.keys(currentHeroData.talents).filter(l => currentHeroData.talents[l].length > 0).sort((a,b) => parseInt(a.replace({js_regex_digit},"")) - parseInt(b.replace({js_regex_digit},"")));
             selectedTalents = new Array(lvs.length).fill(0); currentTalentNodes = [];
             let h = ''; lvs.forEach((l, i) => {{
                 currentTalentNodes.push(currentHeroData.talents[l]);
-                h += `<div class="tier-row"><div class="tier-label">${{l.replace(/\\D/g,"")}}L</div><div style="display:flex;gap:4px;">`;
+                // 여기서 Lv로 수정 반영
+                h += `<div class="tier-row"><div class="tier-label">${{l.replace({js_regex_digit},"")}}Lv</div><div style="display:flex;gap:4px;">`;
                 currentHeroData.talents[l].forEach((t, ti) => {{
                     h += `<img src="${{imgBase}}${{t.icon}}" class="t-icon t-row-${{i}} t-node-${{i}}-${{ti+1}}" onclick="toggleTalent(${{i}}, ${{ti+1}}, this)">`;
                 }});
@@ -237,35 +245,33 @@ def generate_html():
             
             const isMana = e.type === "Mana";
             const energyLabel = energyMap[e.type] || e.type;
-            
-            // 마나는 무조건 0.04(4%) 성장 적용, 그 외는 0 고정
             const resourceScale = isMana ? 0.04 : 0;
             const resourceValue = e.amount > 0 ? calc(e.amount, resourceScale, currentLevel) : "없음";
 
             const sArr = [
-                {{l:\"체력\", v:calc(l.amount, l.scale, currentLevel), g: l.scale}}, 
-                {{l:isMana ? \"마나\" : energyLabel, v:resourceValue, g: resourceScale}},
-                {{l:\"공격력\", v:calc(w.damage, w.damageScale, currentLevel), g: w.damageScale}}, 
-                {{l:\"공격주기\", v:w.period.toFixed(2) + \"s\", g: 0}},
-                {{l:\"공격사거리\", v:w.range.toFixed(1), g: 0}}, 
-                {{l:\"피격크기\", v:h.radius.toFixed(2), g: 0}}
+                {{l:"체력", v:calc(l.amount, l.scale, currentLevel), g: l.scale}}, 
+                {{l:isMana ? "마나" : energyLabel, v:e.amount > 0 ? resourceValue : "없음", g: resourceScale}},
+                {{l:"공격력", v:calc(w.damage, w.damageScale, currentLevel), g: w.damageScale}}, 
+                {{l:"공격주기", v:w.period.toFixed(2) + "s", g: 0}},
+                {{l:"공격사거리", v:w.range.toFixed(1), g: 0}}, 
+                {{l:"피격크기", v:h.radius.toFixed(2), g: 0}}
             ];
-            document.getElementById(\"stat-grid\").innerHTML = sArr.map(s => `
-                <div class=\"stat-item\">
-                    <span style=\"color:#888;\">${{s.l}} ${{s.g > 0 ? `(<span style=\"color:var(--green)\">+${{(s.g*100).toFixed(2)}}%</span>)` : \"\"}}</span>
-                    <b class=\"stat-value\">${{s.v}}</b>
-                </div>`).join(\"\");
+            document.getElementById("stat-grid").innerHTML = sArr.map(s => `
+                <div class="stat-item">
+                    <span style="color:#888;">${{s.l}} ${{s.g > 0 ? `(<span style="color:var(--green)">+${{(s.g*100).toFixed(2)}}%</span>)` : ""}}</span>
+                    <b class="stat-value">${{s.v}}</b>
+                </div>`).join("");
         }}
 
         function renderAbilities() {{
-            const container = document.getElementById(\"ability-container\");
+            const container = document.getElementById("ability-container");
             const abs = currentHeroData.abilities;
             const all = [...(abs.basic || []), ...(abs.trait || []), ...(abs.mount || []), ...(abs.activable || [])];
-            let html = \"\";
-            [\"Q\", \"W\", \"E\", \"Trait\", \"Z\", \"Active\"].forEach(type => {{
+            let html = "";
+            ["Q", "W", "E", "Trait", "Z", "Active"].forEach(type => {{
                 all.filter(a => a.abilityType === type).forEach(skill => {{
-                    html += `<div class=\"ability-item\"><img src=\"${{imgBase}}${{skill.icon}}\" class=\"ability-icon\"><div class=\"ability-text\">
-                        <span class=\"ability-name\"><span style=\"color:var(--gold)\">[${{type === \"Trait\" ? \"D\" : type}}]</span> ${{skill.name}}</span>
+                    html += `<div class="ability-item"><img src="${{imgBase}}${{skill.icon}}" class="ability-icon"><div class="ability-text">
+                        <span class="ability-name"><span style="color:var(--gold)">[${{type === "Trait" ? "D" : type}}]</span> ${{skill.name}}</span>
                         <div>${{processTooltip(skill.fullTooltip || skill.description, currentLevel)}}</div></div></div>`;
                 }});
             }});
@@ -273,25 +279,25 @@ def generate_html():
         }}
 
         function updateUI() {{
-            const sum = selectedTalents.map((tn, ti) => tn === 0 ? `<div style=\"width:45px;height:45px;border:1px dashed #333;border-radius:3px;\"></div>` : `<img src=\"${{imgBase}}${{currentTalentNodes[ti][tn-1].icon}}\" class=\"summary-img\">`).join(\"\");
-            document.getElementById(\"selected-summary\").innerHTML = sum;
-            document.getElementById(\"build-code\").innerText = currentHeroData ? `[T${{selectedTalents.join(\"\")}},${{currentHeroData.hyperlinkId}}]` : \"영웅 선택\";
+            const sum = selectedTalents.map((tn, ti) => tn === 0 ? `<div style="width:45px;height:45px;border:1px dashed #333;border-radius:3px;"></div>` : `<img src="${{imgBase}}${{currentTalentNodes[ti][tn-1].icon}}" class="summary-img">`).join("");
+            document.getElementById("selected-summary").innerHTML = sum;
+            document.getElementById("build-code").innerText = currentHeroData ? `[T${{selectedTalents.join("")}},${{currentHeroData.hyperlinkId}}]` : "영웅 선택";
         }}
 
         function loadFromCode() {{
-            const val = document.getElementById(\"hero-search\").value;
-            const m = val.match(/\\[T(\\d+),(.+?)\\]/);
-            if(!m) return alert(\"형식 오류\");
+            const val = document.getElementById("hero-search").value;
+            const m = val.match({js_regex_build_code});
+            if(!m) return alert("형식 오류");
             const entry = Object.entries(hotsData).find(([id, d]) => d.hyperlinkId === m[2]);
-            if(entry) selectHero(entry[0], m[1].split(\"\"));
+            if(entry) selectHero(entry[0], m[1].split(""));
         }}
 
-        function renderList(l) {{ document.getElementById(\"hero-list-dropdown\").innerHTML = l.map(h => `<div class=\"hero-item\" onclick=\"selectHero('${{h.id}}')\">${{h.name}}</div>`).join(\"\"); }}
-        function showList() {{ handleSearch(\"\"); }}
-        function copyCode() {{ navigator.clipboard.writeText(document.getElementById(\"build-code\").innerText); alert(\"복사 완료!\"); }}
+        function renderList(l) {{ document.getElementById("hero-list-dropdown").innerHTML = l.map(h => `<div class="hero-item" onclick="selectHero('${{h.id}}')">${{h.name}}</div>`).join(""); }}
+        function showList() {{ handleSearch(""); }}
+        function copyCode() {{ navigator.clipboard.writeText(document.getElementById("build-code").innerText); alert("복사 완료!"); }}
         function takeScreenshot() {{
-            const name = currentHeroData ? currentHeroData.name : \"build\";
-            html2canvas(document.getElementById(\"capture-area\"), {{useCORS:true, backgroundColor:\"#0b0b0d\"}}).then(c => {{
+            const name = currentHeroData ? currentHeroData.name : "build";
+            html2canvas(document.getElementById("capture-area"), {{useCORS:true, backgroundColor:"#0b0b0d"}}).then(c => {{
                 const l = document.createElement('a'); l.download = `${{name}}.png`; l.href = c.toDataURL(); l.click();
             }});
         }}
