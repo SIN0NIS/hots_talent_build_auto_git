@@ -47,14 +47,12 @@ def generate_html():
         
         #hero-stat-container {{ background: #1a1a20; margin: 8px; padding: 12px; border-radius: 8px; border: 1px solid #333; display: none; }}
         
-        /* 슬라이더 스타일 */
         #level-control-wrapper {{ position: relative; width: 100%; padding-bottom: 20px; }}
         .slider-ticks {{ position: absolute; top: 18px; left: 0; width: 100%; display: flex; justify-content: space-between; padding: 0 10px; box-sizing: border-box; pointer-events: none; }}
         .tick {{ width: 2px; height: 6px; background: #333; }}
         .tick.highlight {{ background: var(--p); width: 3px; height: 10px; box-shadow: 0 0 5px var(--p); }}
         .tick-label {{ position: absolute; top: 12px; font-size: 8px; color: #666; transform: translateX(-50%); }}
         
-        /* 스펙 그리드 6개 항목 최적화 */
         .stat-grid {{ display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-bottom: 12px; }}
         .stat-item {{ background: #111; padding: 6px; border-radius: 4px; font-size: 11px; display: flex; flex-direction: column; gap: 2px; }}
         .stat-value {{ color: #fff; font-weight: bold; font-size: 12px; }}
@@ -71,8 +69,8 @@ def generate_html():
         .t-icon.selected {{ border-color: var(--gold); box-shadow: 0 0 6px var(--gold); transform: scale(1.05); z-index: 10; }}
         .t-info-display {{ flex: 1; font-size: 10px; color: #ccc; padding-left: 8px; border-left: 1px solid #444; min-height: 36px; display: flex; align-items: center; }}
         
-        #footer {{ position: fixed; bottom: 0; width: 100%; background: rgba(0,0,0,0.95); border-top: 2px solid var(--p); padding: 8px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: 6px; backdrop-filter: blur(10px); z-index: 1500; }}
-        .summary-img {{ width: 45px; height: 45px; border-radius: 4px; border: 2px solid var(--gold); }}
+        #footer {{ position: fixed; bottom: 0; width: 100%; background: rgba(0,0,0,0.95); border-top: 2px solid var(--p); padding: 10px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: 8px; backdrop-filter: blur(10px); z-index: 1500; }}
+        .summary-img {{ width: 45px; height: 45px; border-radius: 3px; border: 1px solid var(--gold); }}
     </style>
 </head>
 <body>
@@ -81,7 +79,7 @@ def generate_html():
             <input type="text" id="comment-input" class="comment-input" value="https://github.com/SIN0NIS/hots_talent_build_auto_git" readonly onclick="window.open(this.value, '_blank')">
             <div style="display:flex; gap:6px;">
                 <input type="text" id="hero-search" class="search-box" placeholder="영웅 검색..." onclick="showList()" oninput="handleSearch(this.value)">
-                <button onclick="loadFromCode()" style="padding:0 12px; background:var(--p); color:white; border:none; border-radius:6px; font-weight:bold; font-size:13px;">로드</button>
+                <button onclick="loadFromCode()" style="padding:0 15px; background:var(--p); color:white; border:none; border-radius:6px; font-weight:bold; font-size:13px;">로드</button>
             </div>
         </div>
         <div id="hero-list-dropdown"></div>
@@ -131,9 +129,7 @@ def generate_html():
             let html = "";
             for(let i=1; i<=30; i++) {{
                 const isHighlight = highlightLevels.includes(i);
-                html += `<div class="tick ${{isHighlight ? 'highlight' : ''}}">
-                    ${{isHighlight ? `<span class="tick-label">${{i}}</span>` : ''}}
-                </div>`;
+                html += `<div class="tick ${{isHighlight ? 'highlight' : ''}}">${{isHighlight ? `<span class="tick-label">${{i}}</span>` : ''}}</div>`;
             }}
             container.innerHTML = html;
         }}
@@ -150,13 +146,14 @@ def generate_html():
             renderList(fil); document.getElementById("hero-list-dropdown").style.display = "block";
         }}
         
+        // 툴팁 내 성장치 표기 수정 (성장치n -> (+n.00%) 형식)
         function processTooltip(t, lv) {{
             if(!t) return ""; let p = t.replace(/<[^>]*>?/gm, "");
             p = p.replace(/(\d+(?:\.\d+)?)\s*~~(0\.\d+)~~/g, (m, b, s) => {{
                 const v = parseFloat(b) * Math.pow(1 + parseFloat(s), lv - 1);
-                return "<strong>" + v.toFixed(1) + "</strong>";
+                return "<strong>" + v.toFixed(1) + "</strong>(+" + (parseFloat(s)*100).toFixed(2) + "%)";
             }});
-            return p.replace(/~~(0\.\d+)~~/g, "");
+            return p.replace(/~~(0\.\d+)~~/g, (m, s) => "(+" + (parseFloat(s)*100).toFixed(2) + "%)");
         }}
 
         function selectHero(id, code = null) {{
@@ -166,13 +163,9 @@ def generate_html():
             document.getElementById("hero-info-title").innerText = currentHeroData.name;
             document.getElementById("hero-role-badge").innerText = currentHeroData.expandedRole || "미분류";
             document.getElementById("hero-stat-container").style.display = "block";
-            
             createSliderTicks();
             const lvs = Object.keys(currentHeroData.talents).filter(l => currentHeroData.talents[l].length > 0).sort((a,b) => parseInt(a.replace(/\D/g,"")) - parseInt(b.replace(/\D/g,"")));
-            
-            selectedTalents = new Array(lvs.length).fill(0); 
-            currentTalentNodes = [];
-            
+            selectedTalents = new Array(lvs.length).fill(0); currentTalentNodes = [];
             let h = ''; lvs.forEach((l, i) => {{
                 currentTalentNodes.push(currentHeroData.talents[l]);
                 h += `<div class="tier-row"><div class="tier-label">${{l.replace(/\D/g,"")}}L</div><div style="display:flex;gap:4px;">`;
@@ -182,43 +175,29 @@ def generate_html():
                 h += `</div><div class="t-info-display" id="desc-${{i}}">선택...</div></div>`;
             }});
             document.getElementById("main-content").innerHTML = h;
-            renderAbilities();
-            renderStats(); 
-            updateUI();
+            renderAbilities(); renderStats(); updateUI();
         }}
 
         function toggleTalent(ti, tn, el) {{
             const box = document.getElementById("desc-"+ti);
-            if(selectedTalents[ti] === tn) {{ 
-                selectedTalents[ti] = 0; el.classList.remove("selected"); box.innerHTML = "선택..."; 
-            }}
+            if(selectedTalents[ti] === tn) {{ selectedTalents[ti] = 0; el.classList.remove("selected"); box.innerHTML = "선택..."; }}
             else {{
-                selectedTalents[ti] = tn; 
-                document.querySelectorAll(".t-row-"+ti).forEach(img => img.classList.remove("selected"));
-                el.classList.add("selected");
-                updateTalentTooltip(ti);
+                selectedTalents[ti] = tn; document.querySelectorAll(".t-row-"+ti).forEach(img => img.classList.remove("selected"));
+                el.classList.add("selected"); updateTalentTooltip(ti);
             }}
             updateUI();
         }}
 
         function updateTalentTooltip(ti) {{
-            const tn = selectedTalents[ti];
-            if(tn === 0) return;
-            const box = document.getElementById("desc-"+ti);
-            const t = currentTalentNodes[ti][tn-1];
+            const tn = selectedTalents[ti]; if(tn === 0) return;
+            const box = document.getElementById("desc-"+ti); const t = currentTalentNodes[ti][tn-1];
             box.innerHTML = `<div style="width:100%"><b style="color:#fff;font-size:11px;">${{t.name}}</b><br><span style="font-size:10px;">${{processTooltip(t.fullTooltip, currentLevel)}}</span></div>`;
         }}
 
         function updateLevel(lv) {{
-            currentLevel = parseInt(lv); 
-            document.getElementById("level-display").innerText = "LV " + currentLevel;
+            currentLevel = parseInt(lv); document.getElementById("level-display").innerText = "LV " + currentLevel;
             document.getElementById("level-growth-total").innerText = "(+" + ((Math.pow(1.04, currentLevel - 1) - 1) * 100).toFixed(2) + "%)";
-            if(currentHeroData) {{ 
-                renderStats(); 
-                renderAbilities(); 
-                // 특성 선택 유지하며 툴팁 내용(수치)만 갱신
-                selectedTalents.forEach((tn, ti) => {{ if(tn > 0) updateTalentTooltip(ti); }}); 
-            }}
+            if(currentHeroData) {{ renderStats(); renderAbilities(); selectedTalents.forEach((tn, ti) => {{ if(tn > 0) updateTalentTooltip(ti); }}); }}
         }}
 
         function renderStats() {{
@@ -226,16 +205,20 @@ def generate_html():
             const w = (h.weapons && h.weapons[0]) ? h.weapons[0] : {{damage:0, range:0, period:1, damageScale:0.04}};
             const c = (b, s, lv) => (b * Math.pow(1 + (s || 0.04), lv - 1)).toFixed(0);
             
-            // 요청하신 6개 항목 고정 (체력, 마나, 공격력, 공격주기, 공격사거리, 피격)
+            // 캐릭터 스탯 성장치 표기 수정 (+n.00%)
             const sArr = [
-                {{l:"체력", v:c(l.amount, l.scale, currentLevel)}}, 
-                {{l:"마나", v:e.amount > 0 ? c(e.amount, e.scale, currentLevel) : "없음"}},
-                {{l:"공격력", v:c(w.damage, w.damageScale, currentLevel)}}, 
-                {{l:"공격주기", v:w.period.toFixed(2) + "s"}},
-                {{l:"공격사거리", v:w.range.toFixed(1)}}, 
-                {{l:"피격크기", v:h.radius.toFixed(2)}}
+                {{l:"체력", v:c(l.amount, l.scale, currentLevel), g: l.scale}}, 
+                {{l:"마나", v:e.amount > 0 ? c(e.amount, e.scale, currentLevel) : "없음", g: e.amount > 0 ? e.scale : 0}},
+                {{l:"공격력", v:c(w.damage, w.damageScale, currentLevel), g: w.damageScale}}, 
+                {{l:"공격주기", v:w.period.toFixed(2) + "s", g: 0}},
+                {{l:"공격사거리", v:w.range.toFixed(1), g: 0}}, 
+                {{l:"피격크기", v:h.radius.toFixed(2), g: 0}}
             ];
-            document.getElementById("stat-grid").innerHTML = sArr.map(s => `<div class="stat-item"><span style="color:#888;">${{s.l}}</span><b class="stat-value">${{s.v}}</b></div>`).join("");
+            document.getElementById("stat-grid").innerHTML = sArr.map(s => `
+                <div class="stat-item">
+                    <span style="color:#888;">${{s.l}} ${{s.g > 0 ? `(<span style="color:var(--green)">+${{(s.g*100).toFixed(2)}}%</span>)` : ""}}</span>
+                    <b class="stat-value">${{s.v}}</b>
+                </div>`).join("");
         }}
 
         function renderAbilities() {{
@@ -246,17 +229,16 @@ def generate_html():
             const all = [...(abs.basic || []), ...(abs.trait || []), ...(abs.mount || []), ...(abs.activable || [])];
             targetTypes.forEach(type => {{
                 all.filter(a => a.abilityType === type).forEach(skill => {{
-                    const label = type === "Trait" ? "D" : type;
                     html += `<div class="ability-item"><img src="${{imgBase}}${{skill.icon}}" class="ability-icon"><div class="ability-text">
-                        <span class="ability-name"><span style="color:var(--gold)">[${{label}}]</span> ${{skill.name}}</span>
-                        <div>${{processTooltip(skill.shortTooltip || skill.description, currentLevel)}}</div></div></div>`;
+                        <span class="ability-name"><span style="color:var(--gold)">[${{type === "Trait" ? "D" : type}}]</span> ${{skill.name}}</span>
+                        <div>${{processTooltip(skill.fullTooltip || skill.description, currentLevel)}}</div></div></div>`;
                 }});
             }});
             container.innerHTML = html;
         }}
 
         function updateUI() {{
-            const sum = selectedTalents.map((tn, ti) => tn === 0 ? `<div style="width:14px;height:14px;border:1px dashed #333;border-radius:2px;"></div>` : `<img src="${{imgBase}}${{currentTalentNodes[ti][tn-1].icon}}" class="summary-img">`).join("");
+            const sum = selectedTalents.map((tn, ti) => tn === 0 ? `<div style="width:45px;height:45px;border:1px dashed #333;border-radius:2px;"></div>` : `<img src="${{imgBase}}${{currentTalentNodes[ti][tn-1].icon}}" class="summary-img">`).join("");
             document.getElementById("selected-summary").innerHTML = sum;
             document.getElementById("build-code").innerText = currentHeroData ? `[T${{selectedTalents.join("")}},${{currentHeroData.hyperlinkId}}]` : "영웅 선택";
         }}
@@ -274,7 +256,6 @@ def generate_html():
 </body>
 </html>"""
 
-    # hots_talent_build.html (통합 페이지) 생성
     main_page = f"""<!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -296,4 +277,3 @@ def generate_html():
 
 if __name__ == "__main__":
     generate_html()
-
