@@ -58,9 +58,9 @@ def generate_html():
         .stat-value {{ color: #fff; font-weight: bold; font-size: 12px; }}
         
         .ability-list {{ border-top: 1px solid #333; padding-top: 8px; display: flex; flex-direction: column; gap: 8px; }}
-        .ability-item {{ display: flex; gap: 10px; align-items: flex-start; background: #111; padding: 8px; border-radius: 6px; }}
-        .ability-icon {{ width: 34px; height: 34px; border: 1px solid #444; border-radius: 4px; flex-shrink: 0; }}
-        .ability-text {{ flex: 1; font-size: 11px; color: #ccc; line-height: 1.4; }}
+        .ability-item {{ display: flex; gap: 8px; align-items: flex-start; background: #111; padding: 6px; border-radius: 6px; }}
+        .ability-icon {{ width: 30px; height: 30px; border: 1px solid #444; border-radius: 4px; flex-shrink: 0; }}
+        .ability-text {{ flex: 1; font-size: 10px; color: #ccc; line-height: 1.3; }}
         .ability-name {{ font-weight: bold; color: var(--blue); font-size: 11px; display: block; margin-bottom: 2px; }}
 
         .tier-row {{ display: flex; align-items: center; background: var(--card); padding: 6px 8px; border-radius: 6px; border-left: 4px solid var(--p); gap: 8px; min-height: 55px; margin: 3px 5px; box-sizing: border-box; }}
@@ -123,66 +123,75 @@ def generate_html():
         const imgBase = "{img_cdn_base}";
         let currentHeroData = null; let currentLevel = 1; let selectedTalents = []; let currentTalentNodes = [];
 
-        // 자원 이름 한글 매칭 사전
         const energyMap = {{
-            "Mana": "마나",
-            "Scrap": "고철",
-            "Fury": "분노",
-            "Rage": "광기",
-            "Energy": "기력",
-            "Brew": "취기",
-            "Essence": "정수",
-            "Focus": "집중",
-            "Despair": "절망",
-            "Soul": "영혼"
+            "Mana": "마나", "Scrap": "고철", "Fury": "분노", "Rage": "광기",
+            "Energy": "기력", "Brew": "취기", "Essence": "정수", "Focus": "집중",
+            "Despair": "절망", "Soul": "영혼"
         }};
 
+        // 초성 추출 함수
+        function getChosung(str) {{
+            const cho = ["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
+            let res = ""; 
+            for(let i=0; i<str.length; i++) {{
+                let c = str.charCodeAt(i) - 44032;
+                if(c>-1 && c<11172) res += cho[Math.floor(c/588)];
+                else res += str.charAt(i);
+            }} 
+            return res;
+        }}
+
         function createSliderTicks() {{
-            const container = document.getElementById("slider-ticks");
+            const container = document.getElementById(\"slider-ticks\");
             const highlightLevels = [1, 4, 7, 10, 13, 16, 20, 30];
-            let html = "";
+            let html = \"\";
             for(let i=1; i<=30; i++) {{
                 const isHighlight = highlightLevels.includes(i);
-                html += `<div class="tick ${{isHighlight ? 'highlight' : ''}}">${{isHighlight ? `<span class="tick-label">${{i}}</span>` : ''}}</div>`;
+                html += `<div class=\"tick ${{isHighlight ? 'highlight' : ''}}\">${{isHighlight ? `<span class=\"tick-label\">${{i}}</span>` : ''}}</div>`;
             }}
             container.innerHTML = html;
         }}
 
         function handleSearch(v) {{
-            const s = v.replace(/\s/g, "").toLowerCase();
-            const fil = heroList.filter(h => h.name.replace(/\s/g, "").toLowerCase().includes(s));
-            renderList(fil); document.getElementById("hero-list-dropdown").style.display = "block";
+            const s = v.replace(/\\s/g, \"\").toLowerCase();
+            const choInput = getChosung(s);
+            const fil = heroList.filter(h => {{
+                const n = h.name.replace(/\\s/g, \"\").toLowerCase();
+                const choHero = getChosung(n);
+                return n.includes(s) || choHero.includes(choInput);
+            }});
+            renderList(fil); document.getElementById(\"hero-list-dropdown\").style.display = \"block\";
         }}
         
         function processTooltip(t, lv) {{
-            if(!t) return ""; let p = t.replace(/<[^>]*>?/gm, "");
-            p = p.replace(/(\d+(?:\.\d+)?)\s*~~(0\.\d+)~~/g, (m, b, s) => {{
+            if(!t) return \"\"; let p = t.replace(/<[^>]*>?/gm, \"\");
+            p = p.replace(/(\\d+(?:\\.\\d+)?)\\s*~~(0\\.\\d+)~~/g, (m, b, s) => {{
                 const v = parseFloat(b) * Math.pow(1 + parseFloat(s), lv - 1);
-                return "<strong>" + v.toFixed(1) + "</strong>(+" + (parseFloat(s)*100).toFixed(2) + "%)";
+                return \"<strong>\" + v.toFixed(1) + \"</strong>(+\" + (parseFloat(s)*100).toFixed(2) + \"%)\";
             }});
-            return p.replace(/~~(0\.\d+)~~/g, (m, s) => "(+" + (parseFloat(s)*100).toFixed(2) + "%)");
+            return p.replace(/~~(0\\.\\d+)~~/g, (m, s) => \"(+\" + (parseFloat(s)*100).toFixed(2) + \"%)\");
         }}
 
         function selectHero(id, codeArray = null) {{
-            document.getElementById("welcome-area").style.display = "none";
-            document.getElementById("hero-list-dropdown").style.display = "none";
-            document.getElementById("hero-search").value = "";
+            document.getElementById(\"welcome-area\").style.display = \"none\";
+            document.getElementById(\"hero-list-dropdown\").style.display = \"none\";
+            document.getElementById(\"hero-search\").value = \"\";
             currentHeroData = hotsData[id];
-            document.getElementById("hero-info-title").innerText = currentHeroData.name;
-            document.getElementById("hero-role-badge").innerText = currentHeroData.expandedRole || "미분류";
-            document.getElementById("hero-stat-container").style.display = "block";
+            document.getElementById(\"hero-info-title\").innerText = currentHeroData.name;
+            document.getElementById(\"hero-role-badge\").innerText = currentHeroData.expandedRole || \"미분류\";
+            document.getElementById(\"hero-stat-container\").style.display = \"block\";
             createSliderTicks();
-            const lvs = Object.keys(currentHeroData.talents).filter(l => currentHeroData.talents[l].length > 0).sort((a,b) => parseInt(a.replace(/\D/g,"")) - parseInt(b.replace(/\D/g,"")));
+            const lvs = Object.keys(currentHeroData.talents).filter(l => currentHeroData.talents[l].length > 0).sort((a,b) => parseInt(a.replace(/\\D/g,\"\")) - parseInt(b.replace(/\\D/g,\"\")));
             selectedTalents = new Array(lvs.length).fill(0); currentTalentNodes = [];
             let h = ''; lvs.forEach((l, i) => {{
                 currentTalentNodes.push(currentHeroData.talents[l]);
-                h += `<div class="tier-row"><div class="tier-label">${{l.replace(/\D/g,"")}}L</div><div style="display:flex;gap:4px;">`;
+                h += `<div class=\"tier-row\"><div class=\"tier-label\">${{l.replace(/\\D/g,\"\")}}L</div><div style=\"display:flex;gap:4px;\">`;
                 currentHeroData.talents[l].forEach((t, ti) => {{
-                    h += `<img src="${{imgBase}}${{t.icon}}" class="t-icon t-row-${{i}} t-node-${{i}}-${{ti+1}}" onclick="toggleTalent(${{i}}, ${{ti+1}}, this)">`;
+                    h += `<img src=\"${{imgBase}}${{t.icon}}\" class=\"t-icon t-row-${{i}} t-node-${{i}}-${{ti+1}}\" onclick=\"toggleTalent(${{i}}, ${{ti+1}}, this)\">`;
                 }});
-                h += `</div><div class="t-info-display" id="desc-${{i}}">선택...</div></div>`;
+                h += `</div><div class=\"t-info-display\" id=\"desc-${{i}}\">선택...</div></div>`;
             }});
-            document.getElementById("main-content").innerHTML = h;
+            document.getElementById(\"main-content\").innerHTML = h;
             renderAbilities(); renderStats(); 
             if(codeArray) {{
                 codeArray.forEach((val, idx) => {{
@@ -197,61 +206,62 @@ def generate_html():
         }}
 
         function toggleTalent(ti, tn, el) {{
-            const box = document.getElementById("desc-"+ti);
-            if(selectedTalents[ti] === tn) {{ selectedTalents[ti] = 0; el.classList.remove("selected"); box.innerHTML = "선택..."; }}
+            const box = document.getElementById(\"desc-\"+ti);
+            if(selectedTalents[ti] === tn) {{ selectedTalents[ti] = 0; el.classList.remove(\"selected\"); box.innerHTML = \"선택...\"; }}
             else {{
-                selectedTalents[ti] = tn; document.querySelectorAll(".t-row-"+ti).forEach(img => img.classList.remove("selected"));
-                el.classList.add("selected"); updateTalentTooltip(ti);
+                selectedTalents[ti] = tn; document.querySelectorAll(\".t-row-\"+ti).forEach(img => img.classList.remove(\"selected\"));
+                el.classList.add(\"selected\"); updateTalentTooltip(ti);
             }}
             updateUI();
         }}
 
         function updateTalentTooltip(ti) {{
             const tn = selectedTalents[ti]; if(tn === 0) return;
-            const box = document.getElementById("desc-"+ti); const t = currentTalentNodes[ti][tn-1];
-            box.innerHTML = `<div style="width:100%"><b style="color:#fff;font-size:11px;">${{t.name}}</b><br><span style="font-size:10px;">${{processTooltip(t.fullTooltip, currentLevel)}}</span></div>`;
+            const box = document.getElementById(\"desc-\"+ti); const t = currentTalentNodes[ti][tn-1];
+            box.innerHTML = `<div style=\"width:100%\"><b style=\"color:#fff;font-size:11px;\">${{t.name}}</b><br><span style=\"font-size:10px;\">${{processTooltip(t.fullTooltip, currentLevel)}}</span></div>`;
         }}
 
         function updateLevel(lv) {{
-            currentLevel = parseInt(lv); document.getElementById("level-display").innerText = "LV " + currentLevel;
-            document.getElementById("level-growth-total").innerText = "(+" + ((Math.pow(1.04, currentLevel - 1) - 1) * 100).toFixed(2) + "%)";
+            currentLevel = parseInt(lv); document.getElementById(\"level-display\").innerText = \"LV \" + currentLevel;
+            document.getElementById(\"level-growth-total\").innerText = \"(+\" + ((Math.pow(1.04, currentLevel - 1) - 1) * 100).toFixed(2) + \"%)\";
             if(currentHeroData) {{ renderStats(); renderAbilities(); selectedTalents.forEach((tn, ti) => {{ if(tn > 0) updateTalentTooltip(ti); }}); }}
         }}
 
         function renderStats() {{
-            const h = currentHeroData; const l = h.life; const e = h.energy || {{ amount: 0, scale: 0, type: "None" }};
+            const h = currentHeroData; const l = h.life; const e = h.energy || {{ amount: 0, scale: 0, type: \"None\" }};
             const w = (h.weapons && h.weapons[0]) ? h.weapons[0] : {{damage:0, range:0, period:1, damageScale:0.04}};
-            const c = (b, s, lv) => (b * Math.pow(1 + (s || 0.04), lv - 1)).toFixed(0);
+            const calc = (b, s, lv) => (b * Math.pow(1 + (s || 0.04), lv - 1)).toFixed(0);
             
-            // 자원 이름 결정 로직
             const energyLabel = energyMap[e.type] || e.type;
-            const resourceName = e.amount > 0 ? energyLabel : "자원";
-            const resourceValue = e.amount > 0 ? c(e.amount, e.scale, currentLevel) : "없음";
+            const isMana = e.type === \"Mana\";
+            // 마나가 아니면 성장치(scale)를 0으로 강제 고정
+            const currentEnergyValue = isMana ? calc(e.amount, e.scale, currentLevel) : e.amount.toFixed(0);
+            const currentEnergyScale = isMana ? e.scale : 0;
 
             const sArr = [
-                {{l:"체력", v:c(l.amount, l.scale, currentLevel), g: l.scale}}, 
-                {{l:resourceName, v:resourceValue, g: e.amount > 0 ? e.scale : 0}},
-                {{l:"공격력", v:c(w.damage, w.damageScale, currentLevel), g: w.damageScale}}, 
-                {{l:"공격주기", v:w.period.toFixed(2) + "s", g: 0}},
-                {{l:"공격사거리", v:w.range.toFixed(1), g: 0}}, 
-                {{l:"피격크기", v:h.radius.toFixed(2), g: 0}}
+                {{l:\"체력\", v:calc(l.amount, l.scale, currentLevel), g: l.scale}}, 
+                {{l:isMana ? \"마나\" : energyLabel, v:e.amount > 0 ? currentEnergyValue : \"없음\", g: currentEnergyScale}},
+                {{l:\"공격력\", v:calc(w.damage, w.damageScale, currentLevel), g: w.damageScale}}, 
+                {{l:\"공격주기\", v:w.period.toFixed(2) + \"s\", g: 0}},
+                {{l:\"공격사거리\", v:w.range.toFixed(1), g: 0}}, 
+                {{l:\"피격크기\", v:h.radius.toFixed(2), g: 0}}
             ];
-            document.getElementById("stat-grid").innerHTML = sArr.map(s => `
-                <div class="stat-item">
-                    <span style="color:#888;">${{s.l}} ${{s.g > 0 ? `(<span style="color:var(--green)">+${{(s.g*100).toFixed(2)}}%</span>)` : ""}}</span>
-                    <b class="stat-value">${{s.v}}</b>
-                </div>`).join("");
+            document.getElementById(\"stat-grid\").innerHTML = sArr.map(s => `
+                <div class=\"stat-item\">
+                    <span style=\"color:#888;\">${{s.l}} ${{s.g > 0 ? `(<span style=\"color:var(--green)\">+${{(s.g*100).toFixed(2)}}%</span>)` : \"\"}}</span>
+                    <b class=\"stat-value\">${{s.v}}</b>
+                </div>`).join(\"\");
         }}
 
         function renderAbilities() {{
-            const container = document.getElementById("ability-container");
+            const container = document.getElementById(\"ability-container\");
             const abs = currentHeroData.abilities;
             const all = [...(abs.basic || []), ...(abs.trait || []), ...(abs.mount || []), ...(abs.activable || [])];
-            let html = "";
-            ["Q", "W", "E", "Trait", "Z", "Active"].forEach(type => {{
+            let html = \"\";
+            [\"Q\", \"W\", \"E\", \"Trait\", \"Z\", \"Active\"].forEach(type => {{
                 all.filter(a => a.abilityType === type).forEach(skill => {{
-                    html += `<div class="ability-item"><img src="${{imgBase}}${{skill.icon}}" class="ability-icon"><div class="ability-text">
-                        <span class="ability-name"><span style="color:var(--gold)">[${{type === "Trait" ? "D" : type}}]</span> ${{skill.name}}</span>
+                    html += `<div class=\"ability-item\"><img src=\"${{imgBase}}${{skill.icon}}\" class=\"ability-icon\"><div class=\"ability-text\">
+                        <span class=\"ability-name\"><span style=\"color:var(--gold)\">[${{type === \"Trait\" ? \"D\" : type}}]</span> ${{skill.name}}</span>
                         <div>${{processTooltip(skill.fullTooltip || skill.description, currentLevel)}}</div></div></div>`;
                 }});
             }});
@@ -259,26 +269,25 @@ def generate_html():
         }}
 
         function updateUI() {{
-            const sum = selectedTalents.map((tn, ti) => tn === 0 ? `<div style="width:45px;height:45px;border:1px dashed #333;border-radius:3px;"></div>` : `<img src="${{imgBase}}${{currentTalentNodes[ti][tn-1].icon}}" class="summary-img">`).join("");
-            document.getElementById("selected-summary").innerHTML = sum;
-            document.getElementById("build-code").innerText = currentHeroData ? `[T${{selectedTalents.join("")}},${{currentHeroData.hyperlinkId}}]` : "영웅 선택";
+            const sum = selectedTalents.map((tn, ti) => tn === 0 ? `<div style=\"width:45px;height:45px;border:1px dashed #333;border-radius:3px;\"></div>` : `<img src=\"${{imgBase}}${{currentTalentNodes[ti][tn-1].icon}}\" class=\"summary-img\">`).join(\"\");
+            document.getElementById(\"selected-summary\").innerHTML = sum;
+            document.getElementById(\"build-code\").innerText = currentHeroData ? `[T${{selectedTalents.join(\"\")}},${{currentHeroData.hyperlinkId}}]` : \"영웅 선택\";
         }}
 
         function loadFromCode() {{
-            const val = document.getElementById("hero-search").value;
+            const val = document.getElementById(\"hero-search\").value;
             const m = val.match(/\\[T(\\d+),(.+?)\\]/);
-            if(!m) return alert("형식 오류: [T1231231,HeroId] 형식이어야 합니다.");
+            if(!m) return alert(\"형식 오류\");
             const entry = Object.entries(hotsData).find(([id, d]) => d.hyperlinkId === m[2]);
-            if(entry) selectHero(entry[0], m[1].split(""));
-            else alert("영웅을 찾을 수 없습니다.");
+            if(entry) selectHero(entry[0], m[1].split(\"\"));
         }}
 
-        function renderList(l) {{ document.getElementById("hero-list-dropdown").innerHTML = l.map(h => `<div class="hero-item" onclick="selectHero('${{h.id}}')">${{h.name}}</div>`).join(""); }}
-        function showList() {{ handleSearch(""); }}
-        function copyCode() {{ navigator.clipboard.writeText(document.getElementById("build-code").innerText); alert("복사 완료!"); }}
+        function renderList(l) {{ document.getElementById(\"hero-list-dropdown\").innerHTML = l.map(h => `<div class=\"hero-item\" onclick=\"selectHero('${{h.id}}')\">${{h.name}}</div>`).join(\"\"); }}
+        function showList() {{ handleSearch(\"\"); }}
+        function copyCode() {{ navigator.clipboard.writeText(document.getElementById(\"build-code\").innerText); alert(\"복사 완료!\"); }}
         function takeScreenshot() {{
-            const name = currentHeroData ? currentHeroData.name : "build";
-            html2canvas(document.getElementById("capture-area"), {{useCORS:true, backgroundColor:"#0b0b0d"}}).then(c => {{
+            const name = currentHeroData ? currentHeroData.name : \"build\";
+            html2canvas(document.getElementById(\"capture-area\"), {{useCORS:true, backgroundColor:\"#0b0b0d\"}}).then(c => {{
                 const l = document.createElement('a'); l.download = `${{name}}.png`; l.href = c.toDataURL(); l.click();
             }});
         }}
@@ -287,10 +296,10 @@ def generate_html():
 </html>"""
 
     main_page = f"""<!DOCTYPE html>
-<html lang="ko">
+<html lang=\"ko\">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+    <meta charset=\"UTF-8\">
+    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no\">
     <title>히오스 빌드 메이커 - 통합</title>
     <style>
         body, html {{ margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; background: #0b0b0d; }}
@@ -298,7 +307,7 @@ def generate_html():
     </style>
 </head>
 <body>
-    <iframe src="{output_file}"></iframe>
+    <iframe src=\"{output_file}\"></iframe>
 </body>
 </html>"""
 
