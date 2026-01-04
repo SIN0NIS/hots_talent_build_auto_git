@@ -23,8 +23,7 @@ def generate_html():
 
     hero_list = sorted([{"id": k, "name": v['name'], "hId": v.get('hyperlinkId', k)} for k, v in data.items() if 'name' in v], key=lambda x: x['name'])
 
-    # 4. 자바스크립트 내 정규식 백슬래시 문제 해결을 위한 별도 변수 처리
-    # f-string 내부에서 백슬래시 사용을 피하기 위해 미리 정의
+    # 4. 자바스크립트 정규식 변수 처리
     js_regex_space = r"/\s/g"
     js_regex_digit = r"/\D/g"
     js_regex_non_digit = r"/\d/g"
@@ -82,6 +81,14 @@ def generate_html():
         
         #footer {{ position: fixed; bottom: 0; width: 100%; background: rgba(0,0,0,0.95); border-top: 2px solid var(--p); padding: 10px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: 6px; backdrop-filter: blur(10px); z-index: 1500; }}
         .summary-img {{ width: 45px; height: 45px; border-radius: 3px; border: 1px solid var(--gold); }}
+
+        /* 캡처용 임시 스타일 (JS에서 사용) */
+        .cap-row {{ display: flex; align-items: flex-start; gap: 15px; border-bottom: 1px solid #333; padding: 15px 0; }}
+        .cap-lv {{ color: var(--blue); font-size: 20px; font-weight: bold; width: 50px; flex-shrink: 0; }}
+        .cap-img {{ width: 60px; height: 60px; border: 2px solid var(--gold); border-radius: 8px; flex-shrink: 0; }}
+        .cap-content {{ flex: 1; }}
+        .cap-tname {{ color: white; font-size: 18px; font-weight: bold; margin-bottom: 4px; }}
+        .cap-tdesc {{ color: #bbb; font-size: 14px; line-height: 1.4; }}
     </style>
 </head>
 <body>
@@ -195,7 +202,6 @@ def generate_html():
             selectedTalents = new Array(lvs.length).fill(0); currentTalentNodes = [];
             let h = ''; lvs.forEach((l, i) => {{
                 currentTalentNodes.push(currentHeroData.talents[l]);
-                // 여기서 Lv로 수정 반영
                 h += `<div class="tier-row"><div class="tier-label">${{l.replace({js_regex_digit},"")}}Lv</div><div style="display:flex;gap:4px;">`;
                 currentHeroData.talents[l].forEach((t, ti) => {{
                     h += `<img src="${{imgBase}}${{t.icon}}" class="t-icon t-row-${{i}} t-node-${{i}}-${{ti+1}}" onclick="toggleTalent(${{i}}, ${{ti+1}}, this)">`;
@@ -242,15 +248,10 @@ def generate_html():
             const h = currentHeroData; const l = h.life; const e = h.energy || {{ amount: 0, scale: 0, type: "None" }};
             const w = (h.weapons && h.weapons[0]) ? h.weapons[0] : {{damage:0, range:0, period:1, damageScale:0.04}};
             const calc = (b, s, lv) => (b * Math.pow(1 + (s || 0), lv - 1)).toFixed(0);
-            
-            const isMana = e.type === "Mana";
             const energyLabel = energyMap[e.type] || e.type;
-            const resourceScale = isMana ? 0.04 : 0;
-            const resourceValue = e.amount > 0 ? calc(e.amount, resourceScale, currentLevel) : "없음";
-
             const sArr = [
                 {{l:"체력", v:calc(l.amount, l.scale, currentLevel), g: l.scale}}, 
-                {{l:isMana ? "마나" : energyLabel, v:e.amount > 0 ? resourceValue : "없음", g: resourceScale}},
+                {{l:e.type==="Mana" ? "마나" : energyLabel, v:e.amount > 0 ? (e.type==="Mana" ? calc(e.amount, 0.04, currentLevel) : e.amount) : "없음", g: e.type==="Mana" ? 0.04 : 0}},
                 {{l:"공격력", v:calc(w.damage, w.damageScale, currentLevel), g: w.damageScale}}, 
                 {{l:"공격주기", v:w.period.toFixed(2) + "s", g: 0}},
                 {{l:"공격사거리", v:w.range.toFixed(1), g: 0}}, 
@@ -295,10 +296,55 @@ def generate_html():
         function renderList(l) {{ document.getElementById("hero-list-dropdown").innerHTML = l.map(h => `<div class="hero-item" onclick="selectHero('${{h.id}}')">${{h.name}}</div>`).join(""); }}
         function showList() {{ handleSearch(""); }}
         function copyCode() {{ navigator.clipboard.writeText(document.getElementById("build-code").innerText); alert("복사 완료!"); }}
+
+        // 특성 중심 고화질 캡처 기능
         function takeScreenshot() {{
-            const name = currentHeroData ? currentHeroData.name : "build";
-            html2canvas(document.getElementById("capture-area"), {{useCORS:true, backgroundColor:"#0b0b0d"}}).then(c => {{
-                const l = document.createElement('a'); l.download = `${{name}}.png`; l.href = c.toDataURL(); l.click();
+            if (!currentHeroData) return alert("영웅을 선택해주세요.");
+            
+            // 1. 임시 캡처용 컨테이너 생성
+            const tempDiv = document.createElement('div');
+            tempDiv.style.cssText = "position:absolute; left:-9999px; top:0; width:500px; background:#0b0b0d; padding:25px; border:2px solid #a333ff; color:white; font-family:sans-serif;";
+            
+            let innerHTML = `
+                <div style="text-align:center; margin-bottom:20px; border-bottom:1px solid #444; padding-bottom:15px;">
+                    <div style="font-size:32px; font-weight:bold; color:#a333ff; margin-bottom:5px;">${{currentHeroData.name}}</div>
+                    <div style="font-size:16px; color:#00d4ff;">${{currentHeroData.expandedRole || 'Heroes of the Storm'}} Build</div>
+                </div>
+            `;
+
+            let hasSelection = false;
+            const lvKeys = Object.keys(currentHeroData.talents).filter(l => currentHeroData.talents[l].length > 0).sort((a,b) => parseInt(a.replace({js_regex_digit},"")) - parseInt(b.replace({js_regex_digit},"")));
+
+            selectedTalents.forEach((tn, ti) => {{
+                if (tn > 0) {{
+                    hasSelection = true;
+                    const t = currentTalentNodes[ti][tn-1];
+                    const lvLabel = lvKeys[ti].replace({js_regex_digit},"") + "Lv";
+                    innerHTML += `
+                        <div class="cap-row">
+                            <div class="cap-lv">${{lvLabel}}</div>
+                            <img src="${{imgBase}}${{t.icon}}" class="cap-img">
+                            <div class="cap-content">
+                                <div class="cap-tname">${{t.name}}</div>
+                                <div class="cap-tdesc">${{processTooltip(t.fullTooltip, currentLevel)}}</div>
+                            </div>
+                        </div>
+                    `;
+                }}
+            }});
+
+            if (!hasSelection) return alert("선택된 특성이 없습니다.");
+
+            innerHTML += `<div style="margin-top:20px; text-align:right; font-size:12px; color:#555;">Generated by Build Maker Pro</div>`;
+            tempDiv.innerHTML = innerHTML;
+            document.body.appendChild(tempDiv);
+
+            html2canvas(tempDiv, {{ useCORS:true, backgroundColor:"#0b0b0d", scale:2 }}).then(canvas => {{
+                const link = document.createElement('a');
+                link.download = `${{currentHeroData.name}}_build.png`;
+                link.href = canvas.toDataURL();
+                link.click();
+                document.body.removeChild(tempDiv);
             }});
         }}
     </script>
