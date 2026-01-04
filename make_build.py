@@ -62,7 +62,7 @@ def generate_html():
         .stat-value {{ color: #fff; font-weight: bold; font-size: 12px; }}
         
         .ability-list {{ border-top: 1px solid #333; padding-top: 8px; display: flex; flex-direction: column; gap: 8px; }}
-        .ability-item {{ display: flex; gap: 10px; align-items: flex-start; background: #111; padding: 8px; border-radius: 6px; }}
+        .ability-item {{ display: flex; gap: 8px; align-items: flex-start; background: #111; padding: 6px; border-radius: 6px; }}
         .ability-icon {{ width: 30px; height: 30px; border: 1px solid #444; border-radius: 4px; flex-shrink: 0; }}
         .ability-text {{ flex: 1; font-size: 10px; color: #ccc; line-height: 1.3; }}
         .ability-name {{ font-weight: bold; color: var(--blue); font-size: 11px; display: block; margin-bottom: 2px; }}
@@ -73,7 +73,7 @@ def generate_html():
         .t-icon.selected {{ border-color: var(--gold); box-shadow: 0 0 6px var(--gold); transform: scale(1.05); z-index: 10; }}
         .t-info-display {{ flex: 1; font-size: 10px; color: #ccc; padding-left: 8px; border-left: 1px solid #444; min-height: 36px; display: flex; align-items: center; }}
         
-        #footer {{ position: fixed; bottom: 0; width: 100%; background: rgba(0,0,0,0.95); border-top: 2px solid var(--p); padding: 10px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: 8px; backdrop-filter: blur(10px); z-index: 1500; }}
+        #footer {{ position: fixed; bottom: 0; width: 100%; background: rgba(0,0,0,0.95); border-top: 2px solid var(--p); padding: 10px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: 6px; backdrop-filter: blur(10px); z-index: 1500; }}
         .summary-img {{ width: 45px; height: 45px; border-radius: 3px; border: 1px solid var(--gold); }}
     </style>
 </head>
@@ -88,7 +88,7 @@ def generate_html():
         </div>
         <div id="hero-list-dropdown"></div>
     </div>
-    <div id="capture-area">
+    <div id="capture-area">${l.replace(/\D/g,"")}Lv
         <div id="welcome-area">
             <div id="comment-display">히오스 빌드 사이트 입니다.</div>
         </div>
@@ -233,16 +233,18 @@ def generate_html():
         function renderStats() {{
             const h = currentHeroData; const l = h.life; const e = h.energy || {{ amount: 0, scale: 0, type: "None" }};
             const w = (h.weapons && h.weapons[0]) ? h.weapons[0] : {{damage:0, range:0, period:1, damageScale:0.04}};
-            const calc = (b, s, lv) => (b * Math.pow(1 + (s || 0.04), lv - 1)).toFixed(0);
+            const calc = (b, s, lv) => (b * Math.pow(1 + (s || 0), lv - 1)).toFixed(0);
             
-            const energyLabel = energyMap[e.type] || e.type;
             const isMana = e.type === "Mana";
-            const currentEnergyValue = isMana ? calc(e.amount, 0.04, currentLevel) : e.amount.toFixed(0);
-            const currentEnergyScale = isMana ? 0.04 : 0;
+            const energyLabel = energyMap[e.type] || e.type;
+            
+            // 마나는 무조건 0.04(4%) 성장 적용, 그 외는 0 고정
+            const resourceScale = isMana ? 0.04 : 0;
+            const resourceValue = e.amount > 0 ? calc(e.amount, resourceScale, currentLevel) : "없음";
 
             const sArr = [
                 {{l:\"체력\", v:calc(l.amount, l.scale, currentLevel), g: l.scale}}, 
-                {{l:isMana ? \"마나\" : energyLabel, v:e.amount > 0 ? currentEnergyValue : \"없음\", g: currentEnergyScale}},
+                {{l:isMana ? \"마나\" : energyLabel, v:resourceValue, g: resourceScale}},
                 {{l:\"공격력\", v:calc(w.damage, w.damageScale, currentLevel), g: w.damageScale}}, 
                 {{l:\"공격주기\", v:w.period.toFixed(2) + \"s\", g: 0}},
                 {{l:\"공격사거리\", v:w.range.toFixed(1), g: 0}}, 
@@ -297,7 +299,6 @@ def generate_html():
 </body>
 </html>"""
 
-    # hots_talent_build.html (통합 페이지) 생성 로직
     main_page = f"""<!DOCTYPE html>
 <html lang="ko">
 <head>
