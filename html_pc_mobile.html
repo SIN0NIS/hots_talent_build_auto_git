@@ -1,0 +1,44 @@
+/* --- PC 화면 최적화 (화면 너비 1024px 이상) --- */
+@media (min-width: 1024px) {
+    /* 1. 전체 기본 폰트 크기 상향 */
+    html, body {
+        font-size: 18px; /* 기본 14~16px에서 18px로 상향 */
+    }
+
+    /* 2. 제목이나 강조 텍스트 크기 조정 */
+    h1, .title {
+        font-size: 2.5rem !important;
+    }
+
+    h2, .subtitle {
+        font-size: 2rem !important;
+    }
+
+    /* 3. 특성 아이콘 및 설명 텍스트 크기 (히오스 빌더 구조 가정) */
+    .talent-card, .talent-row {
+        padding: 15px !important; /* 간격을 넓혀 시원하게 배치 */
+    }
+
+    .talent-name {
+        font-size: 1.2rem !important;
+        font-weight: bold;
+    }
+
+    .talent-description {
+        font-size: 1rem !important;
+        line-height: 1.6; /* 가독성을 위해 줄 간격 확보 */
+    }
+
+    /* 4. 버튼이나 인터페이스 요소 확대 */
+    button, .btn {
+        padding: 10px 20px !important;
+        font-size: 1.1rem !important;
+    }
+}
+
+/* --- 고해상도 모니터 (4K 등) 대응 --- */
+@media (min-width: 1920px) {
+    html, body {
+        font-size: 20px; /* 아주 큰 화면에서는 조금 더 확대 */
+    }
+}
