@@ -1,44 +1,48 @@
-/* --- PC 화면 최적화 (화면 너비 1024px 이상) --- */
-@media (min-width: 1024px) {
-    /* 1. 전체 기본 폰트 크기 상향 */
-    html, body {
-        font-size: 18px; /* 기본 14~16px에서 18px로 상향 */
-    }
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+    <title>히오스 빌드 메이커 - 통합</title>
+    <style>
+        /* 기본 레이아웃: 모바일/PC 공통 전체화면 */
+        body, html { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; background: #0b0b0d; }
+        iframe { width: 100%; height: 100%; border: none; display: block; }
 
-    /* 2. 제목이나 강조 텍스트 크기 조정 */
-    h1, .title {
-        font-size: 2.5rem !important;
-    }
+        /* PC 화면(1024px 이상)에서 iframe 내 텍스트가 작게 보일 때를 위한 보정 */
+        @media (min-width: 1024px) {
+            /* 방법: iframe 자체를 살짝 키우고 스케일을 조정하여 폰트를 크게 만듦 */
+            iframe {
+                width: 80%; /* 비율 조정 */
+                height: 80%;
+                transform: scale(1.25); /* 1.25배 확대하여 PC 가독성 확보 */
+                transform-origin: top left;
+                width: 80vw !important;
+                height: 80vh !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <iframe id="mainFrame" src="index_260104_0738.html"></iframe>
 
-    h2, .subtitle {
-        font-size: 2rem !important;
-    }
-
-    /* 3. 특성 아이콘 및 설명 텍스트 크기 (히오스 빌더 구조 가정) */
-    .talent-card, .talent-row {
-        padding: 15px !important; /* 간격을 넓혀 시원하게 배치 */
-    }
-
-    .talent-name {
-        font-size: 1.2rem !important;
-        font-weight: bold;
-    }
-
-    .talent-description {
-        font-size: 1rem !important;
-        line-height: 1.6; /* 가독성을 위해 줄 간격 확보 */
-    }
-
-    /* 4. 버튼이나 인터페이스 요소 확대 */
-    button, .btn {
-        padding: 10px 20px !important;
-        font-size: 1.1rem !important;
-    }
-}
-
-/* --- 고해상도 모니터 (4K 등) 대응 --- */
-@media (min-width: 1920px) {
-    html, body {
-        font-size: 20px; /* 아주 큰 화면에서는 조금 더 확대 */
-    }
-}
+    <script>
+        // 만약 iframe 내부 스타일을 스크립트로 직접 제어하고 싶을 때 (동일 도메인/GitHub Pages 내)
+        const iframe = document.getElementById('mainFrame');
+        
+        iframe.onload = function() {
+            // PC 환경인지 확인 (브라우저 너비 기준)
+            if (window.innerWidth >= 1024) {
+                try {
+                    // 자식 문서의 body에 접근하여 직접 폰트 크기를 보정
+                    const innerDoc = iframe.contentDocument || iframe.contentWindow.document;
+                    innerDoc.body.style.fontSize = "1.2rem"; 
+                    // 추가적으로 특정 클래스의 폰트를 키우고 싶다면 여기에 작성
+                } catch (e) {
+                    console.log("CORS 정책으로 인해 내부 직접 수정이 제한될 수 있습니다. 이 경우 CSS Transform이 적용됩니다.");
+                }
+            }
+        };
+    </script>
+</body>
+</html>
