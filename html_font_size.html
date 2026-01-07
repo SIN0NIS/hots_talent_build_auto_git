@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+    <title>히오스 빌드 메이커 - 통합</title>
+    <style>
+        body, html { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; background: #0b0b0d; }
+        iframe { width: 100%; height: 100%; border: none; display: block; }
+    </style>
+</head>
+<body>
+    <iframe id="buildFrame" src="index_260104_0738.html"></iframe>
+
+    <script>
+        const iframe = document.getElementById('buildFrame');
+        
+        iframe.onload = function() {
+            try {
+                const innerDoc = iframe.contentDocument || iframe.contentWindow.document;
+                
+                // 방법: CSS 주입 (폰트 크기 110% 확대 예시)
+                const style = innerDoc.createElement('style');
+                style.innerHTML = `
+                    body { 
+                        zoom: 1.1; /* 전체적인 확대 */
+                        font-size: 1.1em !important; /* 텍스트 강조 확대 */
+                    }
+                `;
+                innerDoc.head.appendChild(style);
+            } catch (e) {
+                console.error("보안 정책(CORS)으로 인해 내부 문서에 접근할 수 없습니다.");
+            }
+        };
+    </script>
+</body>
+</html>
