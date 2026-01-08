@@ -65,13 +65,30 @@ def generate_html():
         .stat-value {{ color: #fff; font-weight: bold; font-size: 1.2em; }}
         .stat-label {{ color: #888; font-size: 0.85em; display: flex; justify-content: space-between; }}
         
-        /* [레벨 슬라이더] 눈금(Ticks) 스타일 */
-        .slider-container {{ position: relative; width: 100%; margin: 10px 0 20px 0; }}
-        .slider-ticks {{ display: flex; justify-content: space-between; padding: 0 5px; margin-top: 5px; }}
-        .tick {{ font-size: 9px; color: #666; position: relative; display: flex; flex-direction: column; align-items: center; }}
-        .tick::before {{ content: ''; width: 1px; height: 4px; background: #444; margin-bottom: 2px; }}
+        /* [레벨 슬라이더] 눈금(Ticks) 및 정렬 보정 */
+        .slider-container {{ position: relative; width: 100%; margin: 10px 0 25px 0; padding: 0 10px; box-sizing: border-box; }}
+        #level-slider {{ width: 100%; margin: 0; cursor: pointer; }}
+        .slider-ticks {{ 
+            position: relative; 
+            display: flex; 
+            justify-content: space-between; 
+            /* 슬라이더 손잡이(thumb)의 절반 크기만큼 좌우 여백을 주어 눈금 위치 일치시킴 */
+            padding: 0; 
+            margin-top: 8px; 
+            width: 100%;
+        }}
+        .tick {{ 
+            position: absolute;
+            transform: translateX(-50%);
+            font-size: 9px; 
+            color: #666; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+        }}
+        .tick::before {{ content: ''; width: 1px; height: 5px; background: #444; margin-bottom: 3px; }}
         .tick.highlight {{ color: var(--gold); font-weight: bold; }}
-        .tick.highlight::before {{ background: var(--gold); height: 6px; }}
+        .tick.highlight::before {{ background: var(--gold); height: 7px; }}
 
         /* [특성/기술] 아이콘 및 설명 */
         .ability-list {{ border-top: 1px solid #444; padding-top: 8px; display: flex; flex-direction: column; gap: 8px; }}
@@ -128,19 +145,19 @@ def generate_html():
             
             <div style="background:#25252b; padding:12px; border-radius:8px; margin-bottom:12px;">
                 <div class="slider-container">
-                    <input type="range" id="level-slider" min="1" max="30" value="1" style="width:100%; accent-color:var(--p);" oninput="updateLevel(this.value)">
+                    <input type="range" id="level-slider" min="1" max="30" value="1" step="1" oninput="updateLevel(this.value)">
                     <div class="slider-ticks">
-                        <span class="tick highlight">1</span>
-                        <span class="tick highlight">4</span>
-                        <span class="tick highlight">7</span>
-                        <span class="tick highlight">10</span>
-                        <span class="tick highlight">13</span>
-                        <span class="tick highlight">16</span>
-                        <span class="tick highlight">20</span>
-                        <span class="tick highlight">30</span>
+                        <span class="tick highlight" style="left: 0%;">1</span>
+                        <span class="tick highlight" style="left: 10.34%;">4</span>
+                        <span class="tick highlight" style="left: 20.68%;">7</span>
+                        <span class="tick highlight" style="left: 31.03%;">10</span>
+                        <span class="tick highlight" style="left: 41.37%;">13</span>
+                        <span class="tick highlight" style="left: 51.72%;">16</span>
+                        <span class="tick highlight" style="left: 65.51%;">20</span>
+                        <span class="tick highlight" style="left: 100%;">30</span>
                     </div>
                 </div>
-                <div style="display:flex; justify-content:space-between; margin-top:8px;">
+                <div style="display:flex; justify-content:space-between; margin-top:12px;">
                     <span id="level-display" style="font-weight:bold; color:var(--gold); font-size:14px;">LV 1</span>
                     <span id="level-growth-total" style="color:var(--green); font-size:12px;">(+0.00%)</span>
                 </div>
