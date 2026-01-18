@@ -21,7 +21,6 @@ def generate_html():
     with open(en_path, 'r', encoding='utf-8') as f:
         data_en = json.load(f)
 
-    # 영웅 목록 생성 (한글/영문 모두 포함하여 검색 최적화)
     hero_list = []
     for h_id, v_ko in data_ko.items():
         if 'name' in v_ko:
@@ -35,13 +34,12 @@ def generate_html():
     
     hero_list = sorted(hero_list, key=lambda x: x['name_ko'])
 
-    # 파일명 및 시간 설정
     now = datetime.now()
     timestamp = now.strftime("%y%m%d_%H%M")
     output_file = f"index_{timestamp}.html"
     img_cdn_base = "https://raw.githubusercontent.com/SIN0NIS/images/main/abilitytalents/"
 
-    # 3. 데이터가 포함된 메인 콘텐츠 HTML (index_YYMMDD_HHMM.html)
+    # 3. 데이터가 포함된 메인 콘텐츠 HTML
     html_content = f"""<!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -69,10 +67,13 @@ def generate_html():
         #capture-area {{ flex: 1; display: flex; flex-direction: column; overflow-y: auto; padding-bottom: 250px; background: #0b0b0d; width: 100%; box-sizing: border-box; }}
         #hero-stat-container {{ background: #1a1a20; margin: 8px; padding: 12px; border-radius: 8px; border: 1px solid #333; display: none; }}
         
+        /* 스탯 그리드 설정 */
         .stat-grid {{ display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-bottom: 12px; }}
         .stat-item {{ background: #111; padding: 6px; border-radius: 4px; display: flex; flex-direction: column; gap: 2px; }}
-        .stat-value {{ color: #fff; font-weight: bold; font-size: 1.2em; }}
-        .stat-label {{ color: #888; font-size: 0.85em; display: flex; justify-content: space-between; }}
+        .stat-value {{ color: #fff; font-weight: bold; font-size: 1.25em; }}
+        .stat-label {{ color: #888; font-size: 0.85em; display: flex; justify-content: space-between; align-items: center; }}
+        .growth-tag {{ color: var(--green); font-size: 0.9em; }}
+        .dps-tag {{ color: var(--gold); font-size: 0.9em; font-weight: normal; margin-left: 4px; }}
         
         .slider-container {{ position: relative; width: 100%; margin: 10px 0 25px 0; padding: 0 10px; box-sizing: border-box; }}
         #level-slider {{ width: 100%; margin: 0; cursor: pointer; }}
@@ -182,9 +183,7 @@ def generate_html():
         function toggleLanguage() {{
             currentLang = (currentLang === 'ko') ? 'en' : 'ko';
             alert("Language changed: " + (currentLang === 'ko' ? "Korean" : "English"));
-            if(currentHeroId) {{
-                selectHero(currentHeroId, selectedTalents);
-            }}
+            if(currentHeroId) selectHero(currentHeroId, selectedTalents);
             handleSearch(document.getElementById("hero-search").value);
         }}
 
@@ -288,14 +287,52 @@ def generate_html():
 
         function renderStats() {{
             const h = getActiveData()[currentHeroId];
-            const calc = (b, s, lv) => (b * Math.pow(1 + (s || 0.04), lv - 1)).toFixed(0);
-            let sArr = [{{l: currentLang==='ko'?'체력':'Health', v:calc(h.life.amount, h.life.scale, currentLevel), g: h.life.scale}}];
-            const w = (h.weapons && h.weapons[0]) ? h.weapons[0] : {{damage:0, range:0, period:1, damageScale:0.04}};
-            sArr.push({{l: currentLang==='ko'?'공격력':'Attack', v:calc(w.damage, w.damageScale, currentLevel), g: w.damageScale}});
+            const calc = (b, s, lv) => (b * Math.pow(1 + (s || 0), lv - 1)).toFixed(0);
+            const getGT = (s) => s > 0 ? `<span class="growth-tag">(+${{(s*100).toFixed(0)}}%)</span>` : "";
+
+            const energyMap = {{
+                "ko": {{ "Mana": "마나", "Energy": "기력", "Fury": "분노", "Rage": "광기", "Essence": "정수", "Soul": "영혼", "Focus": "집중", "Brew": "취기" }},
+                "en": {{ "Mana": "Mana", "Energy": "Energy", "Fury": "Fury", "Rage": "Rage", "Essence": "Essence", "Soul": "Soul", "Focus": "Focus", "Brew": "Brew" }}
+            }};
+
+            let sArr = [];
             
+            // 1. HP
+            sArr.push({{l: currentLang==='ko'?'생명력':'HP', v: calc(h.life.amount, h.life.scale, currentLevel), g: getGT(h.life.scale)}});
+
+            // 2. 자원 (보호막, 마나 등)
+            if(h.shield) {{
+                sArr.push({{l: currentLang==='ko'?'보호막':'Shield', v: calc(h.shield.amount, h.shield.scale, currentLevel), g: getGT(h.shield.scale)}});
+            }}
+            if(h.energy && h.energy.type !== "None") {{
+                let eName = energyMap[currentLang][h.energy.type] || h.energy.type;
+                let eVal = h.energy.amount;
+                let eScale = (h.energy.type === "Mana") ? 0.04 : 0; // 마나만 레벨당 성장
+                sArr.push({{l: eName, v: calc(eVal, eScale, currentLevel), g: getGT(eScale)}});
+            }}
+
+            // 3. 공격력 & DPS
+            const w = (h.weapons && h.weapons[0]) ? h.weapons[0] : {{damage:0, range:0, period:1, damageScale:0.04}};
+            const dmg = parseFloat(calc(w.damage, w.damageScale, currentLevel));
+            const dps = (dmg / w.period).toFixed(1);
+            sArr.push({{
+                l: currentLang==='ko'?'공격력':'Attack', 
+                v: dmg + `<span class="dps-tag"> (DPS: ${{dps}})</span>`, 
+                g: getGT(w.damageScale)
+            }});
+
+            // 4. 공격 주기
+            sArr.push({{l: currentLang==='ko'?'공격 주기':'Attack Period', v: w.period.toFixed(2) + "s", g: ""}});
+
+            // 5. 사거리
+            sArr.push({{l: currentLang==='ko'?'사거리':'Range', v: w.range.toFixed(1), g: ""}});
+
+            // 6. 피격 반지름
+            sArr.push({{l: currentLang==='ko'?'피격 반지름':'Radius', v: h.radius.toFixed(2), g: ""}});
+
             document.getElementById("stat-grid").innerHTML = sArr.map(s => `
                 <div class="stat-item">
-                    <div class="stat-label"><span>${{s.l}}</span>${{s.g > 0 ? `<span style="color:var(--green);">+${{(s.g*100).toFixed(1)}}%</span>` : ""}}</div>
+                    <div class="stat-label"><span>${{s.l}}</span>${{s.g}}</div>
                     <b class="stat-value">${{s.v}}</b>
                 </div>`).join("");
         }}
@@ -362,7 +399,7 @@ def generate_html():
 </body>
 </html>"""
 
-    # 4. 모바일/PC 최적화된 래퍼 HTML (hots_talent_build.html)
+    # 4. 모바일/PC 최적화된 래퍼 HTML
     main_page = f"""<!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -380,7 +417,6 @@ def generate_html():
 </body>
 </html>"""
 
-    # 5. 파일 저장
     with open(output_file, 'w', encoding='utf-8') as f:
         f.write(html_content)
     with open('hots_talent_build.html', 'w', encoding='utf-8') as f:
