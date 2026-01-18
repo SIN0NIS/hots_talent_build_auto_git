@@ -21,7 +21,7 @@ def generate_html():
     with open(en_path, 'r', encoding='utf-8') as f:
         data_en = json.load(f)
 
-    # 영웅 목록 생성 (한글/영문 모두 포함)
+    # 영웅 목록 생성 (한글/영문 모두 포함하여 검색 최적화)
     hero_list = []
     for h_id, v_ko in data_ko.items():
         if 'name' in v_ko:
@@ -41,7 +41,7 @@ def generate_html():
     output_file = f"index_{timestamp}.html"
     img_cdn_base = "https://raw.githubusercontent.com/SIN0NIS/images/main/abilitytalents/"
 
-    # HTML 템플릿 (자바스크립트 로직 포함)
+    # 3. 데이터가 포함된 메인 콘텐츠 HTML (index_YYMMDD_HHMM.html)
     html_content = f"""<!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -56,7 +56,6 @@ def generate_html():
         #top-link {{ background: #000; padding: 4px 10px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; }}
         #top-link a {{ color: #888; text-decoration: none; font-size: 10px; }}
         
-        /* 언어 전환 버튼 스타일 */
         .lang-btn {{ background: #333; color: #fff; border: 1px solid var(--p); padding: 2px 8px; border-radius: 4px; cursor: pointer; font-size: 10px; font-weight: bold; }}
         .lang-btn:hover {{ background: var(--p); }}
 
@@ -175,22 +174,21 @@ def generate_html():
         const heroList = {json.dumps(hero_list, ensure_ascii=False)};
         const imgBase = "{img_cdn_base}";
         
-        let currentLang = 'ko'; // 기본 언어 설정
+        let currentLang = 'ko'; 
         let currentHeroId = null; 
         let currentLevel = 1; 
         let selectedTalents = []; 
 
         function toggleLanguage() {{
             currentLang = (currentLang === 'ko') ? 'en' : 'ko';
-            alert("언어 설정이 변경되었습니다: " + (currentLang === 'ko' ? "한국어" : "English"));
+            alert("Language changed: " + (currentLang === 'ko' ? "Korean" : "English"));
             if(currentHeroId) {{
-                selectHero(currentHeroId, selectedTalents); // 현재 선택된 빌드 유지하며 언어만 새로고침
+                selectHero(currentHeroId, selectedTalents);
             }}
             handleSearch(document.getElementById("hero-search").value);
         }}
 
         function getActiveData() {{ return currentLang === 'ko' ? dataKO : dataEN; }}
-
         function updateFontSize(v) {{ document.documentElement.style.setProperty('--fs', v + 'px'); }}
 
         function getChosung(str) {{
@@ -240,11 +238,10 @@ def generate_html():
 
             const lvs = Object.keys(hData.talents).filter(l => hData.talents[l].length > 0).sort((a,b) => parseInt(a.replace(/\D/g,"")) - parseInt(b.replace(/\D/g,"")));
             
-            // 기존 선택 유지 로직
             if(!codeArray || codeArray.length === 0) {{
                 selectedTalents = new Array(lvs.length).fill(0);
             }} else {{
-                selectedTalents = Array.isArray(codeArray) ? codeArray : codeArray;
+                selectedTalents = codeArray;
             }}
 
             let h = '';
@@ -276,16 +273,22 @@ def generate_html():
 
         function updateTalentTooltip(ti) {{
             const tn = selectedTalents[ti]; if(tn == 0) return;
-            const lvs = Object.keys(getActiveData()[currentHeroId].talents).filter(l => getActiveData()[currentHeroId].talents[l].length > 0).sort((a,b) => parseInt(a.replace(/\D/g,"")) - parseInt(b.replace(/\D/g,"")));
-            const t = getActiveData()[currentHeroId].talents[lvs[ti]][tn-1];
+            const hData = getActiveData()[currentHeroId];
+            const lvs = Object.keys(hData.talents).filter(l => hData.talents[l].length > 0).sort((a,b) => parseInt(a.replace(/\D/g,"")) - parseInt(b.replace(/\D/g,"")));
+            const t = hData.talents[lvs[ti]][tn-1];
             document.getElementById("desc-"+ti).innerHTML = `<div style="width:100%"><b style="color:#fff;">${{t.name}}</b><br><span style="font-size:0.95em; color:#ccc;">${{processTooltip(t.fullTooltip, currentLevel)}}</span></div>`;
+        }}
+
+        function updateLevel(lv) {{
+            currentLevel = parseInt(lv);
+            document.getElementById("level-display").innerText = "LV " + currentLevel;
+            document.getElementById("level-growth-total").innerText = "(+" + ((Math.pow(1.04, currentLevel - 1) - 1) * 100).toFixed(2) + "%)";
+            if(currentHeroId) {{ renderStats(); renderAbilities(); selectedTalents.forEach((tn, ti) => {{ if(tn > 0) updateTalentTooltip(ti); }}); }}
         }}
 
         function renderStats() {{
             const h = getActiveData()[currentHeroId];
-            const calc = (b, s, lv) => (b * Math.pow(1 + (s || 0), lv - 1)).toFixed(0);
-            const energyMap = {{ "ko": {{ "Mana": "마나", "Energy": "기력" }}, "en": {{ "Mana": "Mana", "Energy": "Energy" }} }};
-            
+            const calc = (b, s, lv) => (b * Math.pow(1 + (s || 0.04), lv - 1)).toFixed(0);
             let sArr = [{{l: currentLang==='ko'?'체력':'Health', v:calc(h.life.amount, h.life.scale, currentLevel), g: h.life.scale}}];
             const w = (h.weapons && h.weapons[0]) ? h.weapons[0] : {{damage:0, range:0, period:1, damageScale:0.04}};
             sArr.push({{l: currentLang==='ko'?'공격력':'Attack', v:calc(w.damage, w.damageScale, currentLevel), g: w.damageScale}});
@@ -336,10 +339,8 @@ def generate_html():
             if (!currentHeroId) return;
             const tempDiv = document.createElement('div');
             tempDiv.style.cssText = "position:absolute; left:-9999px; top:0; width:500px; background:#0b0b0d; padding:25px; border:2px solid #a333ff; color:white;";
-            
             const hData = getActiveData()[currentHeroId];
             let innerHTML = `<div style="text-align:center; margin-bottom:20px;"><div style="font-size:32px; font-weight:bold; color:#a333ff;">${{hData.name}}</div></div>`;
-
             const lvs = Object.keys(hData.talents).filter(l => hData.talents[l].length > 0).sort((a,b) => parseInt(a.replace(/\D/g,"")) - parseInt(b.replace(/\D/g,"")));
             selectedTalents.forEach((tn, ti) => {{
                 if (tn > 0) {{
@@ -361,10 +362,33 @@ def generate_html():
 </body>
 </html>"""
 
-    # 파일 저장
-    with open(output_file, 'w', encoding='utf-8') as f: f.write(html_content)
-    with open('hots_talent_build.html', 'w', encoding='utf-8') as f: f.write(f"<html><body style='margin:0'><iframe src='{output_file}' style='width:100%;height:100%;border:none'></iframe></body></html>")
-    print(f"파일 생성 완료: {output_file}")
+    # 4. 모바일/PC 최적화된 래퍼 HTML (hots_talent_build.html)
+    main_page = f"""<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+    <title>히오스 빌드 메이커</title>
+    <style>
+        html, body {{ margin: 0; padding: 0; width: 100%; height: 100%; background-color: #0b0b0d; overflow: hidden; }}
+        iframe {{ position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; display: block; }}
+        @supports (-webkit-touch-callout: none) {{ html, body {{ height: -webkit-fill-available; }} }}
+    </style>
+</head>
+<body>
+    <iframe src="{output_file}" allow="clipboard-write" allowfullscreen></iframe>
+</body>
+</html>"""
+
+    # 5. 파일 저장
+    with open(output_file, 'w', encoding='utf-8') as f:
+        f.write(html_content)
+    with open('hots_talent_build.html', 'w', encoding='utf-8') as f:
+        f.write(main_page)
+        
+    print(f"--- 생성 완료 ---")
+    print(f"데이터 포함 파일: {output_file}")
+    print(f"메인 래퍼 파일: hots_talent_build.html")
 
 if __name__ == "__main__":
     generate_html()
