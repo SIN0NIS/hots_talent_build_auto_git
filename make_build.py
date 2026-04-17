@@ -15,7 +15,7 @@ def generate_html():
     ko_path = max(ko_files, key=os.path.getmtime)
     en_path = max(en_files, key=os.path.getmtime)
     
-    # 2. 데이터 로드 및 통합 (원본 hots_talent_260417.txt 구조 유지)
+    # 2. 데이터 로드 및 통합
     with open(ko_path, 'r', encoding='utf-8') as f:
         data_ko = json.load(f)
     with open(en_path, 'r', encoding='utf-8') as f:
@@ -39,7 +39,7 @@ def generate_html():
     output_file = f"index_{timestamp}.html"
     img_cdn_base = "https://raw.githubusercontent.com/SIN0NIS/images/main/abilitytalents/"
 
-    # 3. 데이터가 포함된 메인 콘텐츠 HTML (f-string 문법 오류 수정 완료)
+    # 3. 데이터가 포함된 메인 콘텐츠 HTML (JavaScript 이중 중괄호 수정 완료)
     html_content = f"""<!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -83,7 +83,6 @@ def generate_html():
         .btn-group {{ display: flex; gap: 8px; width: 100%; }}
         .footer-btn {{ flex: 1; background: var(--p); color: white; border: none; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 15px; }}
 
-        /* 캡처 이미지 전용 스타일 (레벨 폰트 축소 반영) */
         .cap-row {{ display: flex; align-items: flex-start; gap: 15px; border-bottom: 1px solid #333; padding: 15px 0; }}
         .cap-lv {{ color: var(--blue); font-size: 14px; font-weight: bold; width: 45px; flex-shrink: 0; margin-top: 4px; }}
         .cap-img {{ width: 60px; height: 60px; border: 2px solid var(--gold); border-radius: 8px; flex-shrink: 0; }}
@@ -131,7 +130,6 @@ def generate_html():
         let currentLevel = 1; 
         let selectedTalents = []; 
 
-        // 초성 검색 기능 복구
         function getChosung(str) {{
             const cho = ["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
             let res = ""; 
@@ -162,7 +160,6 @@ def generate_html():
         function showList() {{ document.getElementById("hero-list-dropdown").style.display = "block"; }}
         function updateFontSize(v) {{ document.documentElement.style.setProperty('--fs', v + 'px'); }}
 
-        // 성장률 소수점 정밀 표기 (.1f)
         function processTooltip(t, lv) {{
             if(!t) return "";
             let p = t.replace(/<[^>]*>?/gm, "").replace(/\\n/g, "<br>");
@@ -180,10 +177,8 @@ def generate_html():
             document.getElementById("hero-list-dropdown").style.display = "none";
             document.getElementById("hero-info-title").innerText = hData.name;
             document.getElementById("hero-stat-container").style.display = "block";
-
             const lvs = Object.keys(hData.talents).filter(l => hData.talents[l].length > 0).sort((a,b) => parseInt(a.replace(/\\D/g,"")) - parseInt(b.replace(/\\D/g,"")));
             selectedTalents = new Array(lvs.length).fill(0);
-
             let h = '';
             lvs.forEach((lv, i) => {{
                 h += `<div class="tier-row"><div style="width:35px; color:var(--blue); font-weight:bold;">${{lv.replace(/\\D/g,"")}}</div><div style="display:flex;gap:4px;">`;
@@ -217,14 +212,11 @@ def generate_html():
             if(currentHeroId) {{ renderStats(); renderAbilities(); }}
         }}
 
-        // 상세 스탯 표기 복구 (원본 hots_talent_260417.txt 로직 기반)
         function renderStats() {{
             const h = dataKO[currentHeroId];
             const calc = (b, s, lv) => (b * Math.pow(1 + (s || 0), lv - 1)).toFixed(0);
-            const getGT = (s) => s > 0 ? `(+${{(s*100).toFixed(1)}}%)` : ""; // 성장률 소수점 고정
-
+            const getGT = (s) => s > 0 ? `(+${{(s*100).toFixed(1)}}%)` : "";
             const energyMap = {{ "Mana": "마나", "Energy": "기력", "Fury": "분노", "Rage": "광기", "Essence": "정수", "Soul": "영혼", "Focus": "집중", "Brew": "취기" }};
-
             let sArr = [];
             sArr.push({{l: '생명력', v: calc(h.life.amount, h.life.scale, currentLevel), g: getGT(h.life.scale)}});
             if(h.shield) sArr.push({{l: '보호막', v: calc(h.shield.amount, h.shield.scale, currentLevel), g: getGT(h.shield.scale)}});
@@ -240,7 +232,6 @@ def generate_html():
             sArr.push({{l: '공격 주기', v: w.period.toFixed(2) + "s", g: ""}});
             sArr.push({{l: '사거리', v: w.range.toFixed(1), g: ""}});
             sArr.push({{l: '피격 반지름', v: h.radius.toFixed(2), g: ""}});
-
             document.getElementById("stat-grid").innerHTML = sArr.map(s => `
                 <div class="stat-item">
                     <div class="stat-label"><span>${{s.l}}</span> <span class="growth-tag">${{s.g}}</span></div>
@@ -263,18 +254,14 @@ def generate_html():
             document.getElementById("ability-container").innerHTML = html;
         }}
 
-        // 이미지 저장 및 클립보드 복사
         async function takeScreenshot(mode) {{
             if (!currentHeroId) return;
             const nameColor = document.getElementById("name-color").value;
             const borderColor = document.getElementById("border-color").value;
-
             const tempDiv = document.createElement('div');
             tempDiv.style.cssText = `position:absolute; left:-9999px; top:0; width:500px; background:#0b0b0d; padding:25px; border:3px solid ${{borderColor}}; color:white; border-radius:12px;`;
-            
             const hData = dataKO[currentHeroId];
             let innerHTML = `<div style="text-align:center; margin-bottom:25px;"><div style="font-size:36px; font-weight:bold; color:${{nameColor}};">${{hData.name}}</div></div>`;
-            
             const lvs = Object.keys(hData.talents).filter(l => hData.talents[l].length > 0).sort((a,b) => parseInt(a.replace(/\\D/g,"")) - parseInt(b.replace(/\\D/g,"")));
             selectedTalents.forEach((tn, ti) => {{
                 if (tn > 0) {{
@@ -282,10 +269,8 @@ def generate_html():
                     innerHTML += `<div class="cap-row"><div class="cap-lv">${{lvs[ti].replace(/\\D/g,"")}}Lv</div><img src="${{imgBase}}${{t.icon}}" class="cap-img"><div class="cap-content"><div class="cap-tname">${{t.name}}</div><div class="cap-tdesc">${{processTooltip(t.fullTooltip, currentLevel)}}</div></div></div>`;
                 }}
             }});
-            
             tempDiv.innerHTML = innerHTML;
             document.body.appendChild(tempDiv);
-
             try {{
                 const canvas = await html2canvas(tempDiv, {{ useCORS:true, backgroundColor:"#0b0b0d", scale: 2 }});
                 if (mode === 'save') {{
@@ -306,12 +291,12 @@ def generate_html():
 </body>
 </html>"""
 
-    # 4. 파일 저장
-    # 로그용 (날짜 및 시간 포함) [cite: 372, 377]
+    # 4. 파일 저장 (중요: 이 부분이 있어야 hots_talent_build.html이 업데이트됩니다)
+    # 로그용 (날짜 포함)
     with open(output_file, 'w', encoding='utf-8') as f:
         f.write(html_content)
 
-    # 서비스용 (사람들이 접속하는 고정 파일명) [cite: 304, 383]
+    # 서비스용 (사람들이 접속하는 고정 파일명) - 이 줄이 추가되었습니다.
     with open('hots_talent_build.html', 'w', encoding='utf-8') as f:
         f.write(html_content)
 
