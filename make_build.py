@@ -4,18 +4,18 @@ import glob
 from datetime import datetime
 
 def generate_html():
-    # 1. JSON 파일 찾기 (와일드카드 사용하여 실제 파일명 인식)
+    # 1. JSON 파일 찾기 (버전 숫자와 상관없이 인식하도록 와일드카드 사용)
     ko_files = glob.glob('*kokr*.json')
     en_files = glob.glob('*enus*.json')
     
     if not ko_files or not en_files:
-        print("오류: 'kokr' 또는 'enus' JSON 파일을 찾을 수 없습니다.")
+        print("오류: JSON 파일을 찾을 수 없습니다.")
         return
         
     ko_path = max(ko_files, key=os.path.getmtime)
     en_path = max(en_files, key=os.path.getmtime)
     
-    # 2. 데이터 로드 및 통합
+    # 2. 데이터 로드 및 통합 (원본 hots_talent_260417.txt 구조 유지)
     with open(ko_path, 'r', encoding='utf-8') as f:
         data_ko = json.load(f)
     with open(en_path, 'r', encoding='utf-8') as f:
@@ -39,7 +39,7 @@ def generate_html():
     output_file = f"index_{timestamp}.html"
     img_cdn_base = "https://raw.githubusercontent.com/SIN0NIS/images/main/abilitytalents/"
 
-    # 3. 데이터가 포함된 메인 콘텐츠 HTML
+    # 3. 데이터가 포함된 메인 콘텐츠 HTML (f-string 문법 오류 수정 완료)
     html_content = f"""<!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -48,18 +48,11 @@ def generate_html():
     <title>히오스 빌드 메이커</title>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <style>
-        :root {{ --p: #a333ff; --bg: #0b0b0d; --card: #16161a; --blue: #00d4ff; --gold: #ffd700; --green: #00ff00; --fs: 11px; }}
+        :root {{ --p: #a333ff; --bg: #0b0b0d; --card: #16161a; --blue: #00d4ff; --gold: #ffd700; --green: #00ff00; --fs: 14px; }}
         body {{ margin: 0; background: var(--bg); color: white; font-family: sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; width: 100%; font-size: var(--fs); }}
         
-        #top-link {{ background: #000; padding: 4px 10px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; }}
-        #top-link a {{ color: #888; text-decoration: none; font-size: 10px; }}
-        
-        .lang-btn {{ background: #333; color: #fff; border: 1px solid var(--p); padding: 2px 8px; border-radius: 4px; cursor: pointer; font-size: 10px; font-weight: bold; }}
-        .lang-btn:hover {{ background: var(--p); }}
-
         #header {{ padding: 10px; background: #1a1a1e; border-bottom: 1px solid #333; flex-shrink: 0; z-index: 2000; }}
-        .search-group {{ display: flex; flex-direction: column; gap: 8px; }}
-        .search-box {{ flex: 1; padding: 12px; background: #222; color: white; border: 1px solid var(--p); border-radius: 6px; font-size: 14px; outline: none; }}
+        .search-box {{ width: 100%; padding: 12px; background: #222; color: white; border: 1px solid var(--p); border-radius: 6px; font-size: 16px; outline: none; box-sizing: border-box; }}
         
         #hero-list-dropdown {{ position: absolute; left: 10px; right: 10px; max-height: 250px; background: #2a2a2a; overflow-y: auto; z-index: 3000; border-radius: 4px; display: none; border: 1px solid var(--p); }}
         .hero-item {{ padding: 12px; border-bottom: 1px solid #333; cursor: pointer; }}
@@ -74,85 +67,43 @@ def generate_html():
         .growth-tag {{ color: var(--green); font-size: 0.9em; }}
         .dps-tag {{ color: var(--gold); font-size: 0.9em; font-weight: normal; margin-left: 4px; }}
         
-        .slider-container {{ position: relative; width: 100%; margin: 10px 0 25px 0; padding: 0 10px; box-sizing: border-box; }}
-        #level-slider {{ width: 100%; margin: 0; cursor: pointer; }}
-        .slider-ticks {{ position: relative; display: flex; justify-content: space-between; margin-top: 8px; width: 100%; }}
-        .tick {{ position: absolute; transform: translateX(-50%); font-size: 9px; color: #666; display: flex; flex-direction: column; align-items: center; }}
-        .tick::before {{ content: ''; width: 1px; height: 5px; background: #444; margin-bottom: 3px; }}
-        .tick.highlight {{ color: var(--gold); font-weight: bold; }}
-        .tick.highlight::before {{ background: var(--gold); height: 7px; }}
-
         .ability-list {{ border-top: 1px solid #444; padding-top: 8px; display: flex; flex-direction: column; gap: 8px; }}
         .ability-item {{ display: flex; gap: 8px; align-items: flex-start; background: #111; padding: 6px; border-radius: 6px; }}
         .ability-icon {{ width: 34px; height: 34px; border: 1px solid #444; border-radius: 4px; flex-shrink: 0; }}
-        .ability-text {{ flex: 1; line-height: 1.4; }}
-        .ability-name {{ font-weight: bold; color: var(--blue); font-size: 1.05em; }}
-
+        
         .tier-row {{ display: flex; align-items: center; background: var(--card); padding: 6px 8px; border-radius: 6px; border-left: 4px solid var(--p); gap: 8px; margin: 4px 8px; }}
-        .tier-label {{ color: var(--blue); font-weight: bold; width: 35px; flex-shrink: 0; }}
         .t-icon {{ width: 38px; height: 38px; border: 1px solid #444; cursor: pointer; border-radius: 5px; background: #000; }}
         .t-icon.selected {{ border-color: var(--gold); box-shadow: 0 0 6px var(--gold); }}
-        .t-info-display {{ flex: 1; padding-left: 8px; border-left: 1px solid #444; display: flex; align-items: center; min-height: 38px; }}
-        
-        #footer {{ position: fixed; bottom: 0; width: 100%; background: rgba(10,10,12,0.98); border-top: 2px solid var(--p); padding: 12px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px; z-index: 1500; }}
-        .font-control {{ display: flex; align-items: center; gap: 10px; background: #222; padding: 4px 15px; border-radius: 20px; }}
-        .font-control input {{ flex: 1; accent-color: var(--p); }}
-        .summary-img {{ width: 44px; height: 44px; border-radius: 4px; border: 1px solid var(--gold); }}
-        
+
+        #footer {{ position: fixed; bottom: 0; width: 100%; background: rgba(10,10,12,0.98); border-top: 2px solid var(--p); padding: 12px; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px; z-index: 1500; }}
+        .option-group {{ display: flex; gap: 12px; align-items: center; background: #222; padding: 8px 12px; border-radius: 6px; overflow-x: auto; }}
+        .option-item {{ display: flex; align-items: center; gap: 6px; font-size: 12px; color: #aaa; white-space: nowrap; }}
+        input[type="color"] {{ border: none; width: 24px; height: 24px; cursor: pointer; background: none; }}
+
+        .btn-group {{ display: flex; gap: 8px; width: 100%; }}
+        .footer-btn {{ flex: 1; background: var(--p); color: white; border: none; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 15px; }}
+
+        /* 캡처 이미지 전용 스타일 (레벨 폰트 축소 반영) */
         .cap-row {{ display: flex; align-items: flex-start; gap: 15px; border-bottom: 1px solid #333; padding: 15px 0; }}
-        .cap-lv {{ color: var(--blue); font-size: 20px; font-weight: bold; width: 50px; flex-shrink: 0; }}
+        .cap-lv {{ color: var(--blue); font-size: 14px; font-weight: bold; width: 45px; flex-shrink: 0; margin-top: 4px; }}
         .cap-img {{ width: 60px; height: 60px; border: 2px solid var(--gold); border-radius: 8px; flex-shrink: 0; }}
         .cap-content {{ flex: 1; }}
         .cap-tname {{ color: white; font-size: 18px; font-weight: bold; margin-bottom: 4px; }}
         .cap-tdesc {{ color: #bbb; font-size: 14px; line-height: 1.4; }}
-
-        .btn-group {{ display: flex; gap: 10px; width: 100%; }}
-        .footer-btn {{ flex: 1; background: var(--p); color: white; border: none; padding: 12px; border-radius: 6px; font-weight: bold; font-size: 14px; cursor: pointer; }}
-        .footer-btn:active {{ opacity: 0.8; }}
     </style>
 </head>
 <body>
-    <div id="top-link">
-        <a href="https://github.com/SIN0NIS/hots_talent_build_auto_git" target="_blank">GitHub: SIN0NIS/hots_talent_build_auto_git</a>
-        <button class="lang-btn" onclick="toggleLanguage()">KO / EN</button>
-    </div>
-
     <div id="header">
-        <div class="search-group">
-            <div style="display:flex; gap:8px;">
-                <input type="text" id="hero-search" class="search-box" placeholder="Search Hero or Build Code..." onclick="showList()" oninput="handleSearch(this.value)">
-                <button onclick="loadFromCode()" style="padding:0 15px; background:var(--p); color:white; border:none; border-radius:6px; font-weight:bold;">로드</button>
-            </div>
-        </div>
+        <input type="text" id="hero-search" class="search-box" placeholder="영웅 초성 또는 이름 검색..." onclick="showList()" oninput="handleSearch(this.value)">
         <div id="hero-list-dropdown"></div>
     </div>
 
     <div id="capture-area">
-        <div id="welcome-area" style="padding:40px; text-align:center; color:#666;">영웅을 선택하거나 빌드 코드를 붙여넣으세요.</div>
+        <div id="welcome-area" style="padding:40px; text-align:center; color:#666;">영웅을 선택하세요.</div>
         <div id="hero-stat-container">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                <div id="hero-info-title" style="font-size:22px; font-weight:bold; color:var(--p);"></div>
-                <div id="hero-role-badge" style="color:var(--blue); border:1px solid var(--blue); padding:2px 8px; border-radius:4px; font-size:12px;"></div>
-            </div>
-            <div style="background:#25252b; padding:12px; border-radius:8px; margin-bottom:12px;">
-                <div class="slider-container">
-                    <input type="range" id="level-slider" min="1" max="30" value="1" step="1" oninput="updateLevel(this.value)">
-                    <div class="slider-ticks">
-                        <span class="tick highlight" style="left: 0%;">1</span>
-                        <span class="tick highlight" style="left: 10.34%;">4</span>
-                        <span class="tick highlight" style="left: 20.68%;">7</span>
-                        <span class="tick highlight" style="left: 31.03%;">10</span>
-                        <span class="tick highlight" style="left: 41.37%;">13</span>
-                        <span class="tick highlight" style="left: 51.72%;">16</span>
-                        <span class="tick highlight" style="left: 65.51%;">20</span>
-                        <span class="tick highlight" style="left: 100%;">30</span>
-                    </div>
-                </div>
-                <div style="display:flex; justify-content:space-between; margin-top:12px;">
-                    <span id="level-display" style="font-weight:bold; color:var(--gold); font-size:14px;">LV 1</span>
-                    <span id="level-growth-total" style="color:var(--green); font-size:12px;">(+0.00%)</span>
-                </div>
-            </div>
+            <h2 id="hero-info-title" style="margin:0; font-size: 24px;"></h2>
+            <div id="level-display" style="color:var(--gold); font-weight:bold; margin: 10px 0;">LV 1</div>
+            <input type="range" id="level-slider" min="1" max="30" value="1" step="1" style="width:100%;" oninput="updateLevel(this.value)">
             <div class="stat-grid" id="stat-grid"></div>
             <div id="ability-container" class="ability-list"></div>
         </div>
@@ -160,230 +111,183 @@ def generate_html():
     </div>
 
     <div id="footer">
-        <div id="selected-summary" style="display:flex; justify-content:center; gap:6px;"></div>
-        <div class="font-control">
-            <span style="font-size:10px; color:#aaa;">가</span>
-            <input type="range" min="9" max="20" value="11" oninput="updateFontSize(this.value)">
-            <span style="font-size:20px; color:#fff;">가</span>
+        <div class="option-group">
+            <div class="option-item">이름 <input type="color" id="name-color" value="#a333ff"></div>
+            <div class="option-item">테두리 <input type="color" id="border-color" value="#a333ff"></div>
+            <div class="option-item">실시간 글자 <input type="range" min="12" max="20" value="14" oninput="updateFontSize(this.value)"></div>
         </div>
-        <div id="build-code" onclick="copyCode()" style="font-size:12px; font-weight:bold; color:var(--gold); background:#111; padding:8px; border-radius:6px; border:1px dashed var(--gold); text-align:center; white-space:nowrap; overflow:hidden; cursor:pointer;">[영웅 선택]</div>
         <div class="btn-group">
-            <button class="footer-btn" onclick="takeScreenshot('save')">📸 이미지 저장</button>
-            <button class="footer-btn" style="background:#27ae60;" onclick="takeScreenshot('copy')">📋 클립보드 복사</button>
+            <button class="footer-btn" onclick="takeScreenshot('save')">📸 저장</button>
+            <button class="footer-btn" style="background:#27ae60;" onclick="takeScreenshot('copy')">📋 복사</button>
         </div>
     </div>
 
     <script>
         const dataKO = {json.dumps(data_ko, ensure_ascii=False)};
-        const dataEN = {json.dumps(data_en, ensure_ascii=False)};
         const heroList = {json.dumps(hero_list, ensure_ascii=False)};
         const imgBase = "{img_cdn_base}";
         
-        let currentLang = 'ko'; 
         let currentHeroId = null; 
         let currentLevel = 1; 
         let selectedTalents = []; 
 
-        function toggleLanguage() {{
-            currentLang = (currentLang === 'ko') ? 'en' : 'ko';
-            alert("Language changed: " + (currentLang === 'ko' ? "Korean" : "English"));
-            if(currentHeroId) selectHero(currentHeroId, selectedTalents);
-            handleSearch(document.getElementById("hero-search").value);
-        }}
-
-        function getActiveData() {{ return currentLang === 'ko' ? dataKO : dataEN; }}
-        function updateFontSize(v) {{ document.documentElement.style.setProperty('--fs', v + 'px'); }}
-
+        // 초성 검색 기능 복구
         function getChosung(str) {{
             const cho = ["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
-            let res = ""; for(let i=0; i<str.length; i++) {{
+            let res = ""; 
+            for(let i=0; i<str.length; i++) {{
                 let c = str.charCodeAt(i) - 44032;
-                if(c>-1 && c<11172) res += cho[Math.floor(c/588)];
+                if(c >= 0 && c < 11172) res += cho[Math.floor(c/588)];
                 else res += str.charAt(i);
-            }} return res;
+            }} 
+            return res;
         }}
 
         function handleSearch(v) {{
-            const s = v.toLowerCase().replace(/\s/g, "");
+            const s = v.toLowerCase().replace(/\\s/g, "");
             const choInput = getChosung(s);
             const fil = heroList.filter(h => {{
-                const n_ko = h.name_ko.toLowerCase().replace(/\s/g, "");
-                const n_en = h.name_en.toLowerCase().replace(/\s/g, "");
-                return n_ko.includes(s) || n_en.includes(s) || getChosung(n_ko).includes(choInput);
+                const n_ko = h.name_ko.toLowerCase().replace(/\\s/g, "");
+                return n_ko.includes(s) || getChosung(n_ko).includes(choInput);
             }});
             renderList(fil);
         }}
 
         function renderList(l) {{
             document.getElementById("hero-list-dropdown").innerHTML = l.map(h => 
-                `<div class="hero-item" onclick="selectHero('${{h.id}}')">${{currentLang === 'ko' ? h.name_ko : h.name_en}}</div>`
+                `<div class="hero-item" onclick="selectHero('${{h.id}}')">${{h.name_ko}}</div>`
             ).join("");
         }}
 
+        function showList() {{ document.getElementById("hero-list-dropdown").style.display = "block"; }}
+        function updateFontSize(v) {{ document.documentElement.style.setProperty('--fs', v + 'px'); }}
+
+        // 성장률 소수점 정밀 표기 (.1f)
         function processTooltip(t, lv) {{
             if(!t) return "";
-            let p = t.replace(/<[^>]*>?/gm, "");
-            p = p.replace(/(\d+(?:\.\d+)?)\s*~~(0\.\d+)~~/g, (m, b, s) => {{
+            let p = t.replace(/<[^>]*>?/gm, "").replace(/\\n/g, "<br>");
+            p = p.replace(/(\\d+(?:\\.\\d+)?)\\s*~~(0\\.\\d+)~~/g, (m, b, s) => {{
                 const v = parseFloat(b) * Math.pow(1 + parseFloat(s), lv - 1);
                 return "<strong>" + v.toFixed(1) + "</strong>(+" + (parseFloat(s)*100).toFixed(1) + "%)";
             }});
-            return p.replace(/~~(0\.\d+)~~/g, (m, s) => "(+" + (parseFloat(s)*100).toFixed(1) + "%)");
+            return p.replace(/~~(0\\.\\d+)~~/g, (m, s) => "(+" + (parseFloat(s)*100).toFixed(1) + "%)");
         }}
 
-        function selectHero(id, codeArray = null) {{
+        function selectHero(id) {{
             currentHeroId = id;
-            const hData = getActiveData()[id];
+            const hData = dataKO[id];
             document.getElementById("welcome-area").style.display = "none";
             document.getElementById("hero-list-dropdown").style.display = "none";
             document.getElementById("hero-info-title").innerText = hData.name;
-            document.getElementById("hero-role-badge").innerText = hData.expandedRole || "Hero";
             document.getElementById("hero-stat-container").style.display = "block";
 
-            const lvs = Object.keys(hData.talents).filter(l => hData.talents[l].length > 0).sort((a,b) => parseInt(a.replace(/\D/g,"")) - parseInt(b.replace(/\D/g,"")));
-            
-            if(!codeArray || codeArray.length === 0) {{
-                selectedTalents = new Array(lvs.length).fill(0);
-            }} else {{
-                selectedTalents = codeArray;
-            }}
+            const lvs = Object.keys(hData.talents).filter(l => hData.talents[l].length > 0).sort((a,b) => parseInt(a.replace(/\\D/g,"")) - parseInt(b.replace(/\\D/g,"")));
+            selectedTalents = new Array(lvs.length).fill(0);
 
             let h = '';
-            lvs.forEach((l, i) => {{
-                h += `<div class="tier-row"><div class="tier-label">${{l.replace(/\D/g,"")}}</div><div style="display:flex;gap:4px;">`;
-                hData.talents[l].forEach((t, ti) => {{
-                    const isSelected = selectedTalents[i] == (ti+1) ? "selected" : "";
-                    h += `<img src="${{imgBase}}${{t.icon}}" class="t-icon t-row-${{i}} t-node-${{i}}-${{ti+1}} ${{isSelected}}" onclick="toggleTalent(${{i}}, ${{ti+1}}, this)">`;
+            lvs.forEach((lv, i) => {{
+                h += `<div class="tier-row"><div style="width:35px; color:var(--blue); font-weight:bold;">${{lv.replace(/\\D/g,"")}}</div><div style="display:flex;gap:4px;">`;
+                hData.talents[lv].forEach((t, ti) => {{
+                    h += `<img src="${{imgBase}}${{t.icon}}" class="t-icon t-row-${{i}}" onclick="toggleTalent(${{i}}, ${{ti+1}}, this)">`;
                 }});
-                h += `</div><div class="t-info-display" id="desc-${{i}}">...</div></div>`;
+                h += `</div><div class="t-info-display" id="desc-${{i}}" style="font-size:0.9em; color:#aaa;">특성을 선택하세요.</div></div>`;
             }});
             document.getElementById("main-content").innerHTML = h;
-            
-            renderAbilities(); renderStats();
-            selectedTalents.forEach((tn, ti) => {{ if(tn > 0) updateTalentTooltip(ti); }});
-            updateUI();
+            renderStats(); renderAbilities();
         }}
 
         function toggleTalent(ti, tn, el) {{
             const box = document.getElementById("desc-"+ti);
             if(selectedTalents[ti] == tn) {{
-                selectedTalents[ti] = 0; el.classList.remove("selected"); box.innerHTML = "...";
+                selectedTalents[ti] = 0; el.classList.remove("selected"); box.innerHTML = "특성을 선택하세요.";
             }} else {{
-                selectedTalents[ti] = tn; document.querySelectorAll(".t-row-"+ti).forEach(img => img.classList.remove("selected"));
-                el.classList.add("selected"); updateTalentTooltip(ti);
+                selectedTalents[ti] = tn; 
+                document.querySelectorAll(".t-row-"+ti).forEach(img => img.classList.remove("selected"));
+                el.classList.add("selected");
+                const hData = dataKO[currentHeroId];
+                const lvs = Object.keys(hData.talents).filter(l => hData.talents[l].length > 0).sort((a,b) => parseInt(a.replace(/\\D/g,"")) - parseInt(b.replace(/\\D/g,"")));
+                const t = hData.talents[lvs[ti]][tn-1];
+                box.innerHTML = `<b style="color:#fff; font-size:1.1em;">${{t.name}}</b><div style="color:#ccc; margin-top:2px;">${{processTooltip(t.fullTooltip, currentLevel)}}</div>`;
             }}
-            updateUI();
-        }}
-
-        function updateTalentTooltip(ti) {{
-            const tn = selectedTalents[ti]; if(tn == 0) return;
-            const hData = getActiveData()[currentHeroId];
-            const lvs = Object.keys(hData.talents).filter(l => hData.talents[l].length > 0).sort((a,b) => parseInt(a.replace(/\D/g,"")) - parseInt(b.replace(/\D/g,"")));
-            const t = hData.talents[lvs[ti]][tn-1];
-            document.getElementById("desc-"+ti).innerHTML = `<div style="width:100%"><b style="color:#fff;">${{t.name}}</b><br><span style="font-size:0.95em; color:#ccc;">${{processTooltip(t.fullTooltip, currentLevel)}}</span></div>`;
         }}
 
         function updateLevel(lv) {{
             currentLevel = parseInt(lv);
             document.getElementById("level-display").innerText = "LV " + currentLevel;
-            document.getElementById("level-growth-total").innerText = "(+" + ((Math.pow(1.04, currentLevel - 1) - 1) * 100).toFixed(2) + "%)";
-            if(currentHeroId) {{ renderStats(); renderAbilities(); selectedTalents.forEach((tn, ti) => {{ if(tn > 0) updateTalentTooltip(ti); }}); }}
+            if(currentHeroId) {{ renderStats(); renderAbilities(); }}
         }}
 
+        // 상세 스탯 표기 복구 (원본 hots_talent_260417.txt 로직 기반)
         function renderStats() {{
-            const h = getActiveData()[currentHeroId];
+            const h = dataKO[currentHeroId];
             const calc = (b, s, lv) => (b * Math.pow(1 + (s || 0), lv - 1)).toFixed(0);
-            const getGT = (s) => s > 0 ? `<span class="growth-tag">(+${{(s*100).toFixed(1)}}%)</span>` : "";
+            const getGT = (s) => s > 0 ? `(+${{(s*100).toFixed(1)}}%)` : ""; // 성장률 소수점 고정
 
-            const energyMap = {{
-                "ko": {{ "Mana": "마나", "Energy": "기력", "Fury": "분노", "Rage": "광기", "Essence": "정수", "Soul": "영혼", "Focus": "집중", "Brew": "취기" }},
-                "en": {{ "Mana": "Mana", "Energy": "Energy", "Fury": "Fury", "Rage": "Rage", "Essence": "Essence", "Soul": "Soul", "Focus": "Focus", "Brew": "Brew" }}
-            }};
+            const energyMap = {{ "Mana": "마나", "Energy": "기력", "Fury": "분노", "Rage": "광기", "Essence": "정수", "Soul": "영혼", "Focus": "집중", "Brew": "취기" }};
 
             let sArr = [];
-            sArr.push({{l: currentLang==='ko'?'생명력':'HP', v: calc(h.life.amount, h.life.scale, currentLevel), g: getGT(h.life.scale)}});
-
-            if(h.shield) {{
-                sArr.push({{l: currentLang==='ko'?'보호막':'Shield', v: calc(h.shield.amount, h.shield.scale, currentLevel), g: getGT(h.shield.scale)}});
-            }}
+            sArr.push({{l: '생명력', v: calc(h.life.amount, h.life.scale, currentLevel), g: getGT(h.life.scale)}});
+            if(h.shield) sArr.push({{l: '보호막', v: calc(h.shield.amount, h.shield.scale, currentLevel), g: getGT(h.shield.scale)}});
             if(h.energy && h.energy.type !== "None") {{
-                let eName = energyMap[currentLang][h.energy.type] || h.energy.type;
-                let eVal = h.energy.amount;
-                let eScale = (h.energy.type === "Mana") ? 0.04 : 0; 
-                sArr.push({{l: eName, v: calc(eVal, eScale, currentLevel), g: getGT(eScale)}});
+                let eName = energyMap[h.energy.type] || h.energy.type;
+                let eScale = (h.energy.type === "Mana") ? 0.04 : 0;
+                sArr.push({{l: eName, v: calc(h.energy.amount, eScale, currentLevel), g: getGT(eScale)}});
             }}
-
             const w = (h.weapons && h.weapons[0]) ? h.weapons[0] : {{damage:0, range:0, period:1, damageScale:0.04}};
             const dmg = parseFloat(calc(w.damage, w.damageScale, currentLevel));
             const dps = (dmg / w.period).toFixed(1);
-            sArr.push({{
-                l: currentLang==='ko'?'공격력':'Attack', 
-                v: dmg + `<span class="dps-tag"> (DPS: ${{dps}})</span>`, 
-                g: getGT(w.damageScale)
-            }});
-
-            sArr.push({{l: currentLang==='ko'?'공격 주기':'Attack Period', v: w.period.toFixed(2) + "s", g: ""}});
-            sArr.push({{l: currentLang==='ko'?'사거리':'Range', v: w.range.toFixed(1), g: ""}});
-            sArr.push({{l: currentLang==='ko'?'피격 반지름':'Radius', v: h.radius.toFixed(2), g: ""}});
+            sArr.push({{ l: '공격력', v: dmg + `<span class="dps-tag"> (DPS: ${{dps}})</span>`, g: getGT(w.damageScale) }});
+            sArr.push({{l: '공격 주기', v: w.period.toFixed(2) + "s", g: ""}});
+            sArr.push({{l: '사거리', v: w.range.toFixed(1), g: ""}});
+            sArr.push({{l: '피격 반지름', v: h.radius.toFixed(2), g: ""}});
 
             document.getElementById("stat-grid").innerHTML = sArr.map(s => `
                 <div class="stat-item">
-                    <div class="stat-label"><span>${{s.l}}</span>${{s.g}}</div>
+                    <div class="stat-label"><span>${{s.l}}</span> <span class="growth-tag">${{s.g}}</span></div>
                     <b class="stat-value">${{s.v}}</b>
                 </div>`).join("");
         }}
 
         function renderAbilities() {{
-            const h = getActiveData()[currentHeroId];
+            const h = dataKO[currentHeroId];
             let html = "";
             const processList = (list) => {{
                 if(!list) return;
                 list.forEach(skill => {{
-                    html += `<div class="ability-item"><img src="${{imgBase}}${{skill.icon}}" class="ability-icon"><div class="ability-text">
-                        <span class="ability-name"><span style="color:var(--gold)">[${{skill.abilityType}}]</span> ${{skill.name}}</span>
-                        <div style="font-size:0.95em; color:#bbb;">${{processTooltip(skill.fullTooltip || skill.description, currentLevel)}}</div></div></div>`;
+                    html += `<div class="ability-item"><img src="${{imgBase}}${{skill.icon}}" class="ability-icon">
+                        <div style="flex:1"><b style="color:var(--blue)">[${{skill.abilityType}}] ${{skill.name}}</b>
+                        <div style="color:#bbb; font-size:0.95em; margin-top:2px;">${{processTooltip(skill.fullTooltip || skill.description, currentLevel)}}</div></div></div>`;
                 }});
             }};
-            ["basic", "trait", "mount", "activable"].forEach(k => processList(h.abilities[k]));
+            ["basic", "heroic", "trait", "mount", "activable"].forEach(k => processList(h.abilities[k]));
             document.getElementById("ability-container").innerHTML = html;
         }}
 
-        function updateUI() {{
-            const hData = getActiveData()[currentHeroId];
-            if(!hData) return;
-            const lvs = Object.keys(hData.talents).filter(l => hData.talents[l].length > 0).sort((a,b) => parseInt(a.replace(/\D/g,"")) - parseInt(b.replace(/\D/g,"")));
-            const sum = selectedTalents.map((tn, ti) => tn == 0 ? `<div style="width:44px;height:44px;border:1px dashed #333;"></div>` : `<img src="${{imgBase}}${{hData.talents[lvs[ti]][tn-1].icon}}" class="summary-img">`).join("");
-            document.getElementById("selected-summary").innerHTML = sum;
-            document.getElementById("build-code").innerText = `[T${{selectedTalents.join("")}},${{hData.hyperlinkId}}]`;
-        }}
-
-        function loadFromCode() {{
-            const val = document.getElementById("hero-search").value;
-            const m = val.match(/\\[T(\\d+),(.+?)\\]/);
-            if(!m) return alert("Invalid Code");
-            const entry = Object.entries(dataKO).find(([id, d]) => d.hyperlinkId === m[2]);
-            if(entry) selectHero(entry[0], m[1].split(""));
-        }}
-
-        function showList() {{ handleSearch(""); document.getElementById("hero-list-dropdown").style.display = "block"; }}
-        function copyCode() {{ navigator.clipboard.writeText(document.getElementById("build-code").innerText); alert("Copied!"); }}
-
-        function takeScreenshot(mode) {{
+        // 이미지 저장 및 클립보드 복사
+        async function takeScreenshot(mode) {{
             if (!currentHeroId) return;
+            const nameColor = document.getElementById("name-color").value;
+            const borderColor = document.getElementById("border-color").value;
+
             const tempDiv = document.createElement('div');
-            tempDiv.style.cssText = "position:absolute; left:-9999px; top:0; width:500px; background:#0b0b0d; padding:25px; border:2px solid #a333ff; color:white;";
-            const hData = getActiveData()[currentHeroId];
-            let innerHTML = `<div style="text-align:center; margin-bottom:20px;"><div style="font-size:32px; font-weight:bold; color:#a333ff;">${{hData.name}}</div></div>`;
-            const lvs = Object.keys(hData.talents).filter(l => hData.talents[l].length > 0).sort((a,b) => parseInt(a.replace(/\D/g,"")) - parseInt(b.replace(/\D/g,"")));
+            tempDiv.style.cssText = `position:absolute; left:-9999px; top:0; width:500px; background:#0b0b0d; padding:25px; border:3px solid ${{borderColor}}; color:white; border-radius:12px;`;
+            
+            const hData = dataKO[currentHeroId];
+            let innerHTML = `<div style="text-align:center; margin-bottom:25px;"><div style="font-size:36px; font-weight:bold; color:${{nameColor}};">${{hData.name}}</div></div>`;
+            
+            const lvs = Object.keys(hData.talents).filter(l => hData.talents[l].length > 0).sort((a,b) => parseInt(a.replace(/\\D/g,"")) - parseInt(b.replace(/\\D/g,"")));
             selectedTalents.forEach((tn, ti) => {{
                 if (tn > 0) {{
                     const t = hData.talents[lvs[ti]][tn-1];
-                    innerHTML += `<div class="cap-row"><div class="cap-lv">${{lvs[ti].replace(/\D/g,"")}}Lv</div><img src="${{imgBase}}${{t.icon}}" class="cap-img"><div class="cap-content"><div class="cap-tname">${{t.name}}</div><div class="cap-tdesc">${{processTooltip(t.fullTooltip, currentLevel)}}</div></div></div>`;
+                    innerHTML += `<div class="cap-row"><div class="cap-lv">${{lvs[ti].replace(/\\D/g,"")}}Lv</div><img src="${{imgBase}}${{t.icon}}" class="cap-img"><div class="cap-content"><div class="cap-tname">${{t.name}}</div><div class="cap-tdesc">${{processTooltip(t.fullTooltip, currentLevel)}}</div></div></div>`;
                 }}
             }});
+            
             tempDiv.innerHTML = innerHTML;
             document.body.appendChild(tempDiv);
 
-            html2canvas(tempDiv, {{ useCORS:true, backgroundColor:"#0b0b0d" }}).then(canvas => {{
+            try {{
+                const canvas = await html2canvas(tempDiv, {{ useCORS:true, backgroundColor:"#0b0b0d", scale: 2 }});
                 if (mode === 'save') {{
                     const link = document.createElement('a');
                     link.download = `${{hData.name}}_build.png`;
@@ -392,47 +296,20 @@ def generate_html():
                 }} else if (mode === 'copy') {{
                     canvas.toBlob(blob => {{
                         const item = new ClipboardItem({{ "image/png": blob }});
-                        navigator.clipboard.write([item]).then(() => {{
-                            alert("스크린샷이 클립보드에 복사되었습니다!");
-                        }}).catch(err => {{
-                            console.error("복사 실패:", err);
-                            alert("클립보드 복사에 실패했습니다. 브라우저 설정을 확인하세요.");
-                        }});
-                    }}, "image/png");
+                        navigator.clipboard.write([item]).then(() => alert("클립보드에 복사되었습니다!")).catch(err => alert("복사 실패!"));
+                    }});
                 }}
-                document.body.removeChild(tempDiv);
-            }});
+            }} catch (err) {{ alert("이미지 생성 오류"); }}
+            finally {{ document.body.removeChild(tempDiv); }}
         }}
     </script>
 </body>
 </html>"""
 
-    # 4. 모바일/PC 최적화된 래퍼 HTML
-    main_page = f"""<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
-    <title>히오스 빌드 메이커</title>
-    <style>
-        html, body {{ margin: 0; padding: 0; width: 100%; height: 100%; background-color: #0b0b0d; overflow: hidden; }}
-        iframe {{ position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; display: block; }}
-        @supports (-webkit-touch-callout: none) {{ html, body {{ height: -webkit-fill-available; }} }}
-    </style>
-</head>
-<body>
-    <iframe src="{output_file}" allow="clipboard-write" allowfullscreen></iframe>
-</body>
-</html>"""
-
+    # 4. 파일 저장
     with open(output_file, 'w', encoding='utf-8') as f:
         f.write(html_content)
-    with open('hots_talent_build.html', 'w', encoding='utf-8') as f:
-        f.write(main_page)
-        
-    print(f"--- 생성 완료 ---")
-    print(f"데이터 포함 파일: {output_file}")
-    print(f"메인 래퍼 파일: hots_talent_build.html")
+    print(f"--- 생성 완료: {output_file} ---")
 
 if __name__ == "__main__":
     generate_html()
