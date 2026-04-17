@@ -4,7 +4,7 @@ import glob
 from datetime import datetime
 
 def generate_html():
-    # 1. JSON 파일 찾기 (KO, EN 모두 로드)
+    # 1. JSON 파일 찾기 (와일드카드 사용하여 실제 파일명 인식)
     ko_files = glob.glob('*kokr*.json')
     en_files = glob.glob('*enus*.json')
     
@@ -67,7 +67,6 @@ def generate_html():
         #capture-area {{ flex: 1; display: flex; flex-direction: column; overflow-y: auto; padding-bottom: 250px; background: #0b0b0d; width: 100%; box-sizing: border-box; }}
         #hero-stat-container {{ background: #1a1a20; margin: 8px; padding: 12px; border-radius: 8px; border: 1px solid #333; display: none; }}
         
-        /* 스탯 그리드 설정 */
         .stat-grid {{ display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-bottom: 12px; }}
         .stat-item {{ background: #111; padding: 6px; border-radius: 4px; display: flex; flex-direction: column; gap: 2px; }}
         .stat-value {{ color: #fff; font-weight: bold; font-size: 1.25em; }}
@@ -106,6 +105,10 @@ def generate_html():
         .cap-content {{ flex: 1; }}
         .cap-tname {{ color: white; font-size: 18px; font-weight: bold; margin-bottom: 4px; }}
         .cap-tdesc {{ color: #bbb; font-size: 14px; line-height: 1.4; }}
+
+        .btn-group {{ display: flex; gap: 10px; width: 100%; }}
+        .footer-btn {{ flex: 1; background: var(--p); color: white; border: none; padding: 12px; border-radius: 6px; font-weight: bold; font-size: 14px; cursor: pointer; }}
+        .footer-btn:active {{ opacity: 0.8; }}
     </style>
 </head>
 <body>
@@ -163,9 +166,10 @@ def generate_html():
             <input type="range" min="9" max="20" value="11" oninput="updateFontSize(this.value)">
             <span style="font-size:20px; color:#fff;">가</span>
         </div>
-        <div style="display:flex; gap:10px; width:100%;">
-            <div id="build-code" onclick="copyCode()" style="flex:2.5; font-size:14px; font-weight:bold; color:var(--gold); background:#111; padding:12px; border-radius:6px; border:1px dashed var(--gold); text-align:center; white-space:nowrap; overflow:hidden; cursor:pointer;">[영웅 선택]</div>
-            <button onclick="takeScreenshot()" style="flex:1; background:var(--p); color:white; border:none; padding:10px; border-radius:6px; font-weight:bold; font-size:15px; cursor:pointer;">📸 저장</button>
+        <div id="build-code" onclick="copyCode()" style="font-size:12px; font-weight:bold; color:var(--gold); background:#111; padding:8px; border-radius:6px; border:1px dashed var(--gold); text-align:center; white-space:nowrap; overflow:hidden; cursor:pointer;">[영웅 선택]</div>
+        <div class="btn-group">
+            <button class="footer-btn" onclick="takeScreenshot('save')">📸 이미지 저장</button>
+            <button class="footer-btn" style="background:#27ae60;" onclick="takeScreenshot('copy')">📋 클립보드 복사</button>
         </div>
     </div>
 
@@ -288,7 +292,7 @@ def generate_html():
         function renderStats() {{
             const h = getActiveData()[currentHeroId];
             const calc = (b, s, lv) => (b * Math.pow(1 + (s || 0), lv - 1)).toFixed(0);
-            const getGT = (s) => s > 0 ? `<span class="growth-tag">(+${{(s*100).toFixed(0)}}%)</span>` : "";
+            const getGT = (s) => s > 0 ? `<span class="growth-tag">(+${{(s*100).toFixed(1)}}%)</span>` : "";
 
             const energyMap = {{
                 "ko": {{ "Mana": "마나", "Energy": "기력", "Fury": "분노", "Rage": "광기", "Essence": "정수", "Soul": "영혼", "Focus": "집중", "Brew": "취기" }},
@@ -296,22 +300,18 @@ def generate_html():
             }};
 
             let sArr = [];
-            
-            // 1. HP
             sArr.push({{l: currentLang==='ko'?'생명력':'HP', v: calc(h.life.amount, h.life.scale, currentLevel), g: getGT(h.life.scale)}});
 
-            // 2. 자원 (보호막, 마나 등)
             if(h.shield) {{
                 sArr.push({{l: currentLang==='ko'?'보호막':'Shield', v: calc(h.shield.amount, h.shield.scale, currentLevel), g: getGT(h.shield.scale)}});
             }}
             if(h.energy && h.energy.type !== "None") {{
                 let eName = energyMap[currentLang][h.energy.type] || h.energy.type;
                 let eVal = h.energy.amount;
-                let eScale = (h.energy.type === "Mana") ? 0.04 : 0; // 마나만 레벨당 성장
+                let eScale = (h.energy.type === "Mana") ? 0.04 : 0; 
                 sArr.push({{l: eName, v: calc(eVal, eScale, currentLevel), g: getGT(eScale)}});
             }}
 
-            // 3. 공격력 & DPS
             const w = (h.weapons && h.weapons[0]) ? h.weapons[0] : {{damage:0, range:0, period:1, damageScale:0.04}};
             const dmg = parseFloat(calc(w.damage, w.damageScale, currentLevel));
             const dps = (dmg / w.period).toFixed(1);
@@ -321,13 +321,8 @@ def generate_html():
                 g: getGT(w.damageScale)
             }});
 
-            // 4. 공격 주기
             sArr.push({{l: currentLang==='ko'?'공격 주기':'Attack Period', v: w.period.toFixed(2) + "s", g: ""}});
-
-            // 5. 사거리
             sArr.push({{l: currentLang==='ko'?'사거리':'Range', v: w.range.toFixed(1), g: ""}});
-
-            // 6. 피격 반지름
             sArr.push({{l: currentLang==='ko'?'피격 반지름':'Radius', v: h.radius.toFixed(2), g: ""}});
 
             document.getElementById("stat-grid").innerHTML = sArr.map(s => `
@@ -363,7 +358,7 @@ def generate_html():
 
         function loadFromCode() {{
             const val = document.getElementById("hero-search").value;
-            const m = val.match(/\[T(\d+),(.+?)\]/);
+            const m = val.match(/\\[T(\\d+),(.+?)\\]/);
             if(!m) return alert("Invalid Code");
             const entry = Object.entries(dataKO).find(([id, d]) => d.hyperlinkId === m[2]);
             if(entry) selectHero(entry[0], m[1].split(""));
@@ -372,7 +367,7 @@ def generate_html():
         function showList() {{ handleSearch(""); document.getElementById("hero-list-dropdown").style.display = "block"; }}
         function copyCode() {{ navigator.clipboard.writeText(document.getElementById("build-code").innerText); alert("Copied!"); }}
 
-        function takeScreenshot() {{
+        function takeScreenshot(mode) {{
             if (!currentHeroId) return;
             const tempDiv = document.createElement('div');
             tempDiv.style.cssText = "position:absolute; left:-9999px; top:0; width:500px; background:#0b0b0d; padding:25px; border:2px solid #a333ff; color:white;";
@@ -387,11 +382,24 @@ def generate_html():
             }});
             tempDiv.innerHTML = innerHTML;
             document.body.appendChild(tempDiv);
+
             html2canvas(tempDiv, {{ useCORS:true, backgroundColor:"#0b0b0d" }}).then(canvas => {{
-                const link = document.createElement('a');
-                link.download = `${{hData.name}}_build.png`;
-                link.href = canvas.toDataURL();
-                link.click();
+                if (mode === 'save') {{
+                    const link = document.createElement('a');
+                    link.download = `${{hData.name}}_build.png`;
+                    link.href = canvas.toDataURL();
+                    link.click();
+                }} else if (mode === 'copy') {{
+                    canvas.toBlob(blob => {{
+                        const item = new ClipboardItem({{ "image/png": blob }});
+                        navigator.clipboard.write([item]).then(() => {{
+                            alert("스크린샷이 클립보드에 복사되었습니다!");
+                        }}).catch(err => {{
+                            console.error("복사 실패:", err);
+                            alert("클립보드 복사에 실패했습니다. 브라우저 설정을 확인하세요.");
+                        }});
+                    }}, "image/png");
+                }}
                 document.body.removeChild(tempDiv);
             }});
         }}
