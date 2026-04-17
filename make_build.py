@@ -39,7 +39,7 @@ def generate_html():
     output_file = f"index_{timestamp}.html"
     img_cdn_base = "https://raw.githubusercontent.com/SIN0NIS/images/main/abilitytalents/"
 
-    # 3. 메인 콘텐츠 HTML (모든 로직 통합)
+    # 3. 메인 콘텐츠 HTML (상단 깃허브 링크 추가)
     html_content = f"""<!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -50,35 +50,49 @@ def generate_html():
     <style>
         :root {{ --p: #a333ff; --bg: #0b0b0d; --card: #16161a; --blue: #00d4ff; --gold: #ffd700; --green: #00ff00; --fs: 14px; }}
         body {{ margin: 0; background: var(--bg); color: white; font-family: sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; width: 100%; font-size: var(--fs); }}
-        #header {{ padding: 10px; background: #1a1a1e; border-bottom: 1px solid #333; flex-shrink: 0; }}
+        
+        /* 상단 링크 스타일 */
+        #top-bar {{ background: #000; padding: 6px 12px; border-bottom: 1px solid #333; text-align: center; z-index: 2100; }}
+        #top-bar a {{ color: #888; text-decoration: none; font-size: 11px; font-family: monospace; transition: color 0.2s; }}
+        #top-bar a:hover {{ color: var(--p); }}
+
+        #header {{ padding: 10px; background: #1a1a1e; border-bottom: 1px solid #333; flex-shrink: 0; z-index: 2000; }}
         .search-box {{ width: 100%; padding: 12px; background: #222; color: white; border: 1px solid var(--p); border-radius: 6px; font-size: 16px; outline: none; box-sizing: border-box; }}
         #hero-list-dropdown {{ position: absolute; left: 10px; right: 10px; max-height: 250px; background: #2a2a2a; overflow-y: auto; z-index: 3000; border-radius: 4px; display: none; border: 1px solid var(--p); }}
         .hero-item {{ padding: 12px; border-bottom: 1px solid #333; cursor: pointer; }}
-        #capture-area {{ flex: 1; display: flex; flex-direction: column; overflow-y: auto; padding-bottom: 250px; background: #0b0b0d; width: 100%; box-sizing: border-box; }}
+        #capture-area {{ flex: 1; display: flex; flex-direction: column; overflow-y: auto; padding-bottom: 280px; background: #0b0b0d; width: 100%; box-sizing: border-box; }}
         #hero-stat-container {{ background: #1a1a20; margin: 8px; padding: 12px; border-radius: 8px; border: 1px solid #333; display: none; }}
         .stat-grid {{ display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-bottom: 12px; }}
         .stat-item {{ background: #111; padding: 6px; border-radius: 4px; display: flex; flex-direction: column; gap: 2px; }}
         .stat-value {{ color: #fff; font-weight: bold; font-size: 1.25em; }}
         .stat-label {{ color: #888; font-size: 0.85em; display: flex; justify-content: space-between; align-items: center; }}
         .growth-tag {{ color: var(--green); font-size: 0.9em; }}
-        .dps-tag {{ color: var(--gold); font-size: 0.9em; font-weight: normal; margin-left: 4px; }}
         .ability-list {{ border-top: 1px solid #444; padding-top: 8px; display: flex; flex-direction: column; gap: 8px; }}
         .ability-item {{ display: flex; gap: 8px; align-items: flex-start; background: #111; padding: 6px; border-radius: 6px; }}
         .ability-icon {{ width: 34px; height: 34px; border: 1px solid #444; border-radius: 4px; flex-shrink: 0; }}
         .tier-row {{ display: flex; align-items: center; background: var(--card); padding: 6px 8px; border-radius: 6px; border-left: 4px solid var(--p); gap: 8px; margin: 4px 8px; }}
         .t-icon {{ width: 38px; height: 38px; border: 1px solid #444; cursor: pointer; border-radius: 5px; background: #000; }}
         .t-icon.selected {{ border-color: var(--gold); box-shadow: 0 0 6px var(--gold); }}
-        #footer {{ position: fixed; bottom: 0; width: 100%; background: rgba(10,10,12,0.98); border-top: 2px solid var(--p); padding: 12px; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px; z-index: 1500; }}
-        .option-group {{ display: flex; gap: 12px; align-items: center; background: #222; padding: 8px 12px; border-radius: 6px; overflow-x: auto; }}
-        input[type="color"] {{ border: none; width: 24px; height: 24px; cursor: pointer; background: none; }}
+        
+        #footer {{ position: fixed; bottom: 0; width: 100%; background: rgba(10,10,12,0.98); border-top: 2px solid var(--p); padding: 12px; box-sizing: border-box; display: flex; flex-direction: column; gap: 8px; z-index: 1500; }}
+        #selected-summary {{ display: flex; justify-content: center; gap: 4px; margin-bottom: 4px; }}
+        .summary-icon {{ width: 32px; height: 32px; border: 1px solid #444; border-radius: 4px; background: #000; }}
+        .summary-icon.filled {{ border-color: var(--gold); }}
+        #build-code-box {{ background: #111; border: 1px dashed var(--gold); color: var(--gold); padding: 8px; border-radius: 4px; font-family: monospace; font-size: 13px; text-align: center; cursor: pointer; }}
+        
+        .option-group {{ display: flex; gap: 12px; align-items: center; background: #222; padding: 6px 12px; border-radius: 6px; }}
         .btn-group {{ display: flex; gap: 8px; width: 100%; }}
         .footer-btn {{ flex: 1; background: var(--p); color: white; border: none; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 15px; }}
         .cap-row {{ display: flex; align-items: flex-start; gap: 15px; border-bottom: 1px solid #333; padding: 15px 0; }}
-        .cap-lv {{ color: var(--blue); font-size: 14px; font-weight: bold; width: 45px; flex-shrink: 0; margin-top: 4px; }}
+        .cap-lv {{ color: var(--blue); font-size: 14px; font-weight: bold; width: 45px; flex-shrink: 0; }}
         .cap-img {{ width: 60px; height: 60px; border: 2px solid var(--gold); border-radius: 8px; flex-shrink: 0; }}
     </style>
 </head>
 <body>
+    <div id="top-bar">
+        <a href="https://github.com/SIN0NIS/hots_talent_build_auto_git" target="_blank">🔗 GitHub: SIN0NIS/hots_talent_build_auto_git</a>
+    </div>
+
     <div id="header">
         <input type="text" id="hero-search" class="search-box" placeholder="영웅 초성 또는 이름 검색..." onclick="showList()" oninput="handleSearch(this.value)">
         <div id="hero-list-dropdown"></div>
@@ -95,14 +109,16 @@ def generate_html():
         <div id="main-content"></div>
     </div>
     <div id="footer">
+        <div id="selected-summary"></div>
+        <div id="build-code-box" onclick="copyBuildCode()">특성을 선택하면 빌드 코드가 생성됩니다.</div>
         <div class="option-group">
-            <div class="option-item">이름 <input type="color" id="name-color" value="#a333ff"></div>
-            <div class="option-item">테두리 <input type="color" id="border-color" value="#a333ff"></div>
-            <div class="option-item">실시간 글자 <input type="range" min="12" max="20" value="14" oninput="updateFontSize(this.value)"></div>
+            <span style="font-size:12px; color:#aaa;">이름 <input type="color" id="name-color" value="#a333ff"></span>
+            <span style="font-size:12px; color:#aaa;">테두리 <input type="color" id="border-color" value="#a333ff"></span>
+            <input type="range" min="12" max="20" value="14" oninput="updateFontSize(this.value)">
         </div>
         <div class="btn-group">
             <button class="footer-btn" onclick="takeScreenshot('save')">📸 저장</button>
-            <button class="footer-btn" style="background:#27ae60;" onclick="takeScreenshot('copy')">📋 복사</button>
+            <button class="footer-btn" style="background:#27ae60;" onclick="takeScreenshot('copy')">📋 이미지 복사</button>
         </div>
     </div>
     <script>
@@ -149,7 +165,8 @@ def generate_html():
                 hData.talents[lv].forEach((t, ti) => {{ h += `<img src="${{imgBase}}${{t.icon}}" class="t-icon t-row-${{i}}" onclick="toggleTalent(${{i}}, ${{ti+1}}, this)">`; }});
                 h += `</div><div class="t-info-display" id="desc-${{i}}" style="font-size:0.9em; color:#aaa;">특성을 선택하세요.</div></div>`;
             }});
-            document.getElementById("main-content").innerHTML = h; renderStats(); renderAbilities();
+            document.getElementById("main-content").innerHTML = h; 
+            renderStats(); renderAbilities(); updateBuildUI();
         }}
 
         function toggleTalent(ti, tn, el) {{
@@ -162,6 +179,28 @@ def generate_html():
                 const t = hData.talents[lvs[ti]][tn-1];
                 box.innerHTML = `<b style="color:#fff; font-size:1.1em;">${{t.name}}</b><div style="color:#ccc; margin-top:2px;">${{processTooltip(t.fullTooltip, currentLevel)}}</div>`;
             }}
+            updateBuildUI();
+        }}
+
+        function updateBuildUI() {{
+            if(!currentHeroId) return;
+            const hData = dataKO[currentHeroId];
+            const lvs = Object.keys(hData.talents).filter(l => hData.talents[l].length > 0).sort((a,b) => parseInt(a.replace(/\\D/g,"")) - parseInt(b.replace(/\\D/g,"")));
+            let summaryHTML = "";
+            selectedTalents.forEach((tn, ti) => {{
+                if(tn > 0) {{
+                    const t = hData.talents[lvs[ti]][tn-1];
+                    summaryHTML += `<img src="${{imgBase}}${{t.icon}}" class="summary-icon filled">`;
+                }} else {{ summaryHTML += `<div class="summary-icon"></div>`; }}
+            }});
+            document.getElementById("selected-summary").innerHTML = summaryHTML;
+            const code = `[T${{selectedTalents.join("")}},${{hData.hyperlinkId}}]`;
+            document.getElementById("build-code-box").innerText = code;
+        }}
+
+        function copyBuildCode() {{
+            const code = document.getElementById("build-code-box").innerText;
+            navigator.clipboard.writeText(code).then(() => alert("빌드 코드가 복사되었습니다: " + code));
         }}
 
         function updateLevel(lv) {{ currentLevel = parseInt(lv); document.getElementById("level-display").innerText = "LV " + currentLevel; if(currentHeroId) {{ renderStats(); renderAbilities(); }} }}
@@ -177,9 +216,9 @@ def generate_html():
                 let eScale = (h.energy.type === "Mana") ? 0.04 : 0;
                 sArr.push({{l: eName, v: calc(h.energy.amount, eScale, currentLevel), g: getGT(eScale)}});
             }}
-            const w = (h.weapons && h.weapons[0]) ? h.weapons[0] : {{damage:0, range:0, period:1, damageScale:0.04}};
-            const dmg = parseFloat(calc(w.damage, w.damageScale, currentLevel)); const dps = (dmg / w.period).toFixed(1);
-            sArr.push({{ l: '공격력', v: dmg + `<span class="dps-tag"> (DPS: ${{dps}})</span>`, g: getGT(w.damageScale) }});
+            const w = (h.weapons && h.weapons[0]) ? h.weapons[0] : {{damage:0, period:1, damageScale:0.04, range:0}};
+            const dmg = parseFloat(calc(w.damage, w.damageScale, currentLevel)), dps = (dmg / w.period).toFixed(1);
+            sArr.push({{ l: '공격력', v: dmg + ` (DPS: ${{dps}})`, g: getGT(w.damageScale) }});
             sArr.push({{l: '공격 주기', v: w.period.toFixed(2) + "s", g: ""}}, {{l: '사거리', v: w.range.toFixed(1), g: ""}}, {{l: '피격 반지름', v: h.radius.toFixed(2), g: ""}});
             document.getElementById("stat-grid").innerHTML = sArr.map(s => `<div class="stat-item"><div class="stat-label"><span>${{s.l}}</span> <span class="growth-tag">${{s.g}}</span></div><b class="stat-value">${{s.v}}</b></div>`).join("");
         }}
@@ -208,10 +247,15 @@ def generate_html():
                 }} else {{
                     canvas.toBlob(async blob => {{
                         try {{
-                            const item = new ClipboardItem({{ "image/png": blob }});
-                            await navigator.clipboard.write([item]); alert("클립보드에 복사되었습니다!");
-                        }} catch (err) {{ alert("복사 실패: [📸 저장] 기능을 이용해 주세요."); }}
-                    }});
+                            if (navigator.clipboard && window.ClipboardItem) {{
+                                const item = new ClipboardItem({{ "image/png": blob }});
+                                await navigator.clipboard.write([item]);
+                                alert("이미지가 클립보드에 복사되었습니다!");
+                            }} else {{ throw new Error(); }}
+                        }} catch (err) {{
+                            alert("보안 문제로 이미지 직접 복사가 차단되었습니다. [📸 저장] 버튼을 이용해 주세요.");
+                        }}
+                    }}, "image/png");
                 }}
             }} catch (err) {{ alert("이미지 생성 오류"); }} finally {{ document.body.removeChild(tempDiv); }}
         }}
@@ -219,17 +263,10 @@ def generate_html():
 </body>
 </html>"""
 
-    # 4. 파일 저장 (중요: 두 파일 모두에 전체 내용을 저장함)
-    # 로그 보관용
-    with open(output_file, 'w', encoding='utf-8') as f:
-        f.write(html_content)
-
-    # 실제 서비스용 (메인 페이지 - 이제 직접 코드가 들어가서 복사가 잘 됨)
-    with open('hots_talent_build.html', 'w', encoding='utf-8') as f:
-        f.write(html_content)
-
+    # 4. 파일 저장
+    with open(output_file, 'w', encoding='utf-8') as f: f.write(html_content)
+    with open('hots_talent_build.html', 'w', encoding='utf-8') as f: f.write(html_content)
     print(f"--- 완료 ---")
-    print(f"로그: {output_file} | 서비스: hots_talent_build.html")
 
 if __name__ == "__main__":
     generate_html()
