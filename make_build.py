@@ -39,7 +39,7 @@ def generate_html():
     output_file = f"index_{timestamp}.html"
     img_cdn_base = "https://raw.githubusercontent.com/SIN0NIS/images/main/abilitytalents/"
 
-    # 3. 메인 콘텐츠 HTML (f-string SyntaxError 완벽 수정 버전)
+    # 3. 메인 콘텐츠 HTML (증가율 계산 표기 추가)
     html_content = f"""<!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -63,6 +63,13 @@ def generate_html():
         #capture-area {{ flex: 1; display: flex; flex-direction: column; overflow-y: auto; padding-bottom: 280px; background: #0b0b0d; width: 100%; box-sizing: border-box; }}
         #hero-stat-container {{ background: #1a1a20; margin: 8px; padding: 12px; border-radius: 8px; border: 1px solid #333; display: none; }}
         
+        .slider-wrapper {{ margin: 10px 5px 25px 5px; position: relative; }}
+        #level-slider {{ width: 100%; height: 6px; background: #333; border-radius: 5px; outline: none; }}
+        .slider-ticks {{ display: flex; justify-content: space-between; padding: 0 2px; margin-top: 5px; position: relative; }}
+        .tick {{ font-size: 10px; color: #666; position: absolute; transform: translateX(-50%); text-align: center; }}
+        .tick::before {{ content: '|'; display: block; font-size: 8px; margin-bottom: -2px; color: #444; }}
+        .tick.highlight {{ color: var(--gold); font-weight: bold; }}
+
         .stat-grid {{ display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-bottom: 12px; }}
         .stat-item {{ background: #111; padding: 6px; border-radius: 4px; display: flex; flex-direction: column; gap: 2px; }}
         .stat-value {{ color: #fff; font-weight: bold; font-size: 1.25em; }}
@@ -97,7 +104,7 @@ def generate_html():
     </div>
 
     <div id="header">
-        <input type="text" id="hero-search" class="search-box" placeholder="Search Hero (초성 지원)..." onclick="showList()" oninput="handleSearch(this.value)">
+        <input type="text" id="hero-search" class="search-box" placeholder="영웅 검색 (초성 지원)..." onclick="showList()" oninput="handleSearch(this.value)">
         <div id="hero-list-dropdown"></div>
     </div>
     <div id="capture-area">
@@ -105,7 +112,21 @@ def generate_html():
         <div id="hero-stat-container">
             <h2 id="hero-info-title" style="margin:0; font-size: 24px;"></h2>
             <div id="level-display" style="color:var(--gold); font-weight:bold; margin: 10px 0;">LV 1</div>
-            <input type="range" id="level-slider" min="1" max="30" value="1" step="1" style="width:100%;" oninput="updateLevel(this.value)">
+            
+            <div class="slider-wrapper">
+                <input type="range" id="level-slider" min="1" max="30" value="1" step="1" oninput="updateLevel(this.value)">
+                <div class="slider-ticks">
+                    <span class="tick highlight" style="left: 0%;">1</span>
+                    <span class="tick highlight" style="left: 10.34%;">4</span>
+                    <span class="tick highlight" style="left: 20.68%;">7</span>
+                    <span class="tick highlight" style="left: 31.03%;">10</span>
+                    <span class="tick highlight" style="left: 41.37%;">13</span>
+                    <span class="tick highlight" style="left: 51.72%;">16</span>
+                    <span class="tick highlight" style="left: 65.51%;">20</span>
+                    <span class="tick highlight" style="left: 100%;">30</span>
+                </div>
+            </div>
+
             <div class="stat-grid" id="stat-grid"></div>
             <div id="ability-container" class="ability-list"></div>
         </div>
@@ -230,7 +251,14 @@ def generate_html():
             navigator.clipboard.writeText(code).then(() => alert(currentLang==='ko'?"복사되었습니다!":"Copied!"));
         }}
 
-        function updateLevel(lv) {{ currentLevel = parseInt(lv); document.getElementById("level-display").innerText = "LV " + currentLevel; if(currentHeroId) {{ renderStats(); renderAbilities(); refreshTalentUI(); }} }}
+        function updateLevel(lv) {{ 
+            currentLevel = parseInt(lv); 
+            // 증가율 계산 (가장 보편적인 4% 성장 기준)
+            const totalInc = ((Math.pow(1.04, currentLevel - 1) - 1) * 100).toFixed(1);
+            document.getElementById("level-display").innerHTML = `LV ${{currentLevel}} <span style="font-size:0.8em; color:#aaa; font-weight:normal;">(+$[totalInc]%)</span>`.replace("$[totalInc]", totalInc);
+            
+            if(currentHeroId) {{ renderStats(); renderAbilities(); refreshTalentUI(); }} 
+        }}
 
         function renderStats() {{
             const h = getActiveData()[currentHeroId];
@@ -277,7 +305,7 @@ def generate_html():
             selectedTalents.forEach((tn, ti) => {{ 
                 if (tn > 0) {{ 
                     const t = getActiveData()[currentHeroId].talents[lvs[ti]][tn-1]; 
-                    innerHTML += `<div class="cap-row"><div class="cap-lv">${{lvs[ti].replace(/\\D/g,"")}}Lv</div><img src="${{imgBase}}${{t.icon}}" class="cap-img"><div style="flex:1; padding-left:15px;"><div style="font-size:18px; font-weight:bold;">${{t.name}}</div><div style="color:#bbb; font-size:14px;">${{processTooltip(t.fullTooltip, currentLevel)}}</div></div></div>`; 
+                    innerHTML += `<div class=\"cap-row\"><div class=\"cap-lv\">${{lvs[ti].replace(/\\D/g,"")}}Lv</div><img src=\"${{imgBase}}${{t.icon}}\" class=\"cap-img\"><div style=\"flex:1; padding-left:15px;\"><div style=\"font-size:18px; font-weight:bold;\">${{t.name}}</div><div style=\"color:#bbb; font-size:14px;\">${{processTooltip(t.fullTooltip, currentLevel)}}</div></div></div>`; 
                 }} 
             }});
             tempDiv.innerHTML = innerHTML; document.body.appendChild(tempDiv);
