@@ -4,7 +4,7 @@ on:
   push:
     paths:
       - 'herodata_*_kokr.json'
-  workflow_dispatch:  # <-- 이 줄을 추가하면 수동 실행 버튼이 생깁니다.
+  workflow_dispatch:  # 수동 실행 버튼 활성화
 
 jobs:
   build:
@@ -14,12 +14,12 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4 # v3에서 v4로 업데이트 (Node.js 20 경고 해결)
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5 # v4에서 v5로 업데이트 (Node.js 20 경고 해결)
         with:
-          python-version: '3.9'
+          python-version: '3.11' # 최신 라이브러리 호환성을 위해 3.11 권장
 
       - name: Run Script
         run: python make_build.py
