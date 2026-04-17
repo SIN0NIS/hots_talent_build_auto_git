@@ -307,9 +307,17 @@ def generate_html():
 </html>"""
 
     # 4. 파일 저장
+    # 로그용 (날짜 및 시간 포함) [cite: 372, 377]
     with open(output_file, 'w', encoding='utf-8') as f:
         f.write(html_content)
-    print(f"--- 생성 완료: {output_file} ---")
+
+    # 서비스용 (사람들이 접속하는 고정 파일명) [cite: 304, 383]
+    with open('hots_talent_build.html', 'w', encoding='utf-8') as f:
+        f.write(html_content)
+
+    print(f"--- 생성 완료 ---")
+    print(f"로그 파일: {output_file}")
+    print(f"서비스용 파일: hots_talent_build.html")
 
 if __name__ == "__main__":
     generate_html()
