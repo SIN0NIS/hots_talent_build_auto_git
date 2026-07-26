@@ -1,0 +1,138 @@
+name: 빌드 메이커 갱신
+
+# 매일 한국 오전 8시에 블리자드 패치 서버를 보고, 게임이 새로 나왔을 때만
+# 다시 만든다. 예전에는 영웅 데이터를 로컬에서 뽑아 푸시해야 했지만, 이제는
+# 파서의 online 모드로 CI 가 직접 받아 온다.
+on:
+  schedule:
+    # 23:00 UTC = 한국 오전 8시
+    - cron: '0 23 * * *'
+  workflow_dispatch:
+    inputs:
+      force:
+        description: '게임이 그대로여도 다시 만든다'
+        type: boolean
+        default: false
+  push:
+    branches: [main]
+    paths:
+      - 'make_build.py'
+      - 'scripts/**'
+      - '.github/workflows/build.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: talent-build
+  cancel-in-progress: true
+
+jobs:
+  # 만들 이유가 있는지부터 본다. 게임이 그대로면 러너를 돌릴 이유가 없다.
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      go: ${{ steps.decide.outputs.go }}
+      build: ${{ steps.decide.outputs.build }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: log
+          sparse-checkout-cone-mode: false
+
+      - name: 지금 게임 빌드와 이미 만든 판 견주기
+        id: decide
+        run: |
+          curl -sS --max-time 30 http://us.patch.battle.net:1119/hero/versions > versions.txt
+          BUILD=$(awk -F'|' '/^us\|/ {print $5}' versions.txt)
+          echo "패치 서버가 알려 준 빌드: ${BUILD:-읽기실패}"
+          echo "build=$BUILD" >> "$GITHUB_OUTPUT"
+
+          if [ -z "$BUILD" ]; then
+            echo 'go=false' >> "$GITHUB_OUTPUT"
+            echo '### 패치 서버를 못 읽었다' >> "$GITHUB_STEP_SUMMARY"
+          elif [ "${{ github.event_name }}" != 'schedule' ]; then
+            echo 'go=true' >> "$GITHUB_OUTPUT"
+            echo "### ${{ github.event_name }} 로 불렸다 (Build $BUILD)" >> "$GITHUB_STEP_SUMMARY"
+          elif [ -f "log/Build_$BUILD.html" ]; then
+            echo 'go=false' >> "$GITHUB_OUTPUT"
+            echo "### Build $BUILD 는 이미 만들어 뒀다" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'go=true' >> "$GITHUB_OUTPUT"
+            echo "### 새 빌드 $BUILD 가 나왔다" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  build:
+    needs: check
+    if: needs.check.outputs.go == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0'
+
+      - name: 파서 설치
+        run: |
+          dotnet tool install -g heroesdataparser
+          echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # 블리자드 CDN 에서 영웅 데이터를 바로 받는다. 아이콘은 받지 않는다 -
+      # 빌드 메이커가 raw.githubusercontent.com 에서 불러오기 때문에 필요 없다.
+      - name: 영웅 데이터 받기
+        run: |
+          dotnet-heroes-data-parser online -e Hero \
+            -l enUS -l koKR \
+            -g ColoredTextWithScaling --gs-replace-constant-vars \
+            -o hdp_out
+          find hdp_out -name 'herodata_*.json' -printf '%p  %s bytes\n'
+
+      # 파서 5.x 는 {"meta":…, "items":{…}} 로 감싸고 그룹 키를 Level1/Basic 처럼
+      # 대문자로 낸다. make_build.py 는 구형(4.x) 이름을 읽으므로 옮겨 준다.
+      # 이걸 빼먹으면 오류 없이 돌면서 영웅 목록이 빈 HTML 이 나온다.
+      - name: 구형 형태로 옮기기
+        run: |
+          for LOC in enus kokr; do
+            SRC=$(find hdp_out -name "herodata_*${LOC}.json" | head -1)
+            python scripts/adapt_herodata.py "$SRC" "herodata_${{ needs.check.outputs.build }}_${LOC}.json"
+          done
+
+      - name: HTML 만들기
+        run: python make_build.py
+
+      - name: 영웅이 실제로 담겼는지 확인
+        # 예전에 형태가 어긋나 영웅 0명짜리 HTML 이 조용히 만들어진 적이 있다.
+        run: |
+          python - <<'PY'
+          import json, re, sys
+          html = open('hots_talent_build.html', encoding='utf-8').read()
+          found = re.search(r'const heroList = (\[.*?\]);\n', html, re.S)
+          heroes = json.loads(found.group(1)) if found else []
+          print("영웅 %d명 / %.2f MB" % (len(heroes), len(html) / 1048576))
+          if len(heroes) < 80:
+              sys.exit("영웅이 %d명뿐이다. 데이터 형태가 어긋났다." % len(heroes))
+          PY
+
+      - name: 이번 판 기록에 남기기
+        run: |
+          mkdir -p log
+          cp hots_talent_build.html "log/Build_${{ needs.check.outputs.build }}.html"
+
+      - name: 되돌려 놓기
+        # 받아 온 원본 JSON 과 만들다 생긴 파일은 굳이 지우지 않는다. 커밋하는 것은
+        # 아래 두 경로뿐이고, 러너의 작업 폴더는 어차피 버려진다.
+        run: |
+          git config user.name  'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add hots_talent_build.html log
+          if git diff --staged --quiet; then
+            echo "바뀐 것이 없습니다."
+          else
+            git commit -m "Build ${{ needs.check.outputs.build }} 자동 갱신"
+            git push
+          fi
