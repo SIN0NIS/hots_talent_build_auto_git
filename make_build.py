@@ -37,7 +37,7 @@ def generate_html():
     now = datetime.now()
     timestamp = now.strftime("%y%m%d_%H%M")
     output_file = f"index_{timestamp}.html"
-    img_cdn_base = "https://raw.githubusercontent.com/SIN0NIS/images/main/abilitytalents/"
+    img_cdn_base = "https://sin0nis.github.io/images/abilitytalents/"
 
     # 3. 메인 콘텐츠 HTML (증가율 계산 표기 추가)
     html_content = f"""<!DOCTYPE html>
